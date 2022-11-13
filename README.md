@@ -50,7 +50,8 @@ env.set_dr_training(False)
 
 # ... evaluate policy in non-randomized env
 ```
-See `test.py` for a complete example in a sim-to-real transfer scenario. 
+See `test.py` for a pseudo-example in a sim-to-real transfer scenario. 
+See `train_random_envs.py` in [this repo](https://github.com/gabrieletiboni/sb3-gym-interface) for a full example of an actual training of an RL agent on random-envs environments.
 
 ## Citing
 If you use this repository, please consider citing
