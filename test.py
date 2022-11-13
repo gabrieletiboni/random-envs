@@ -10,10 +10,10 @@ import gym
 def main():
     source_env = gym.make('RandomHopperUnmodeled-v0')
 
-    env.set_dr_distribution(dr_type='uniform', distr=[0.9, 1.1, 1.9, 2.1, 2.9, 3.1])  # Randomize link masses uniformly
-    env.set_dr_training(True)
+    source_env.set_dr_distribution(dr_type='uniform', distr=[0.9, 1.1, 1.9, 2.1, 2.9, 3.1])  # Randomize link masses uniformly
+    source_env.set_dr_training(True)
     # ... policy = ppo.train(source_env)
-    env.set_dr_training(False)
+    source_env.set_dr_training(False)
 
     target_env = gym.make('RandomHopper-v0')
     # ... reward = evaluate_policy(policy, target_env)
