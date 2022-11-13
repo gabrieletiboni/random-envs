@@ -46,7 +46,7 @@ env.set_dr_training(True)
 
 # ... train a policy
 
-env.set_dr_trainin(False)
+env.set_dr_training(False)
 
 # ... evaluate policy in non-randomized env
 ```
