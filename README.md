@@ -33,6 +33,7 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 cd random-envs
 pip install .
 ```
+NOTE: you need to have the mujoco physics engine installed on your system as a prerequisite, as mentioned in the [mujoco_py](https://github.com/openai/mujoco-py) package.
 
 ## Getting Started
 ```
