@@ -32,7 +32,7 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 # git clone <this repo>
 cd random-envs
 pip install -r requirements.txt
-# Install mujoco 2.1 (see https://github.com/openai/mujoco-py)
+# Install mujoco 2.1 (see https://github.com/openai/mujoco-py and https://github.com/openai/mujoco-py/issues/627)
 pip install .
 ```
 NOTE: you need to have the mujoco physics engine installed on your system as a prerequisite, as mentioned in the [mujoco_py](https://github.com/openai/mujoco-py) package.
