@@ -31,6 +31,8 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 ```
 # git clone <this repo>
 cd random-envs
+pip install -r requirements.txt
+# Install mujoco 2.1 (see https://github.com/openai/mujoco-py)
 pip install .
 ```
 NOTE: you need to have the mujoco physics engine installed on your system as a prerequisite, as mentioned in the [mujoco_py](https://github.com/openai/mujoco-py) package.
@@ -53,6 +55,9 @@ env.set_dr_training(False)
 ```
 See `test.py` for a pseudo-example in a sim-to-real transfer scenario. 
 See `train_random_envs.py` in [this repo](https://github.com/gabrieletiboni/sb3-gym-interface) for a full example of an actual training of an RL agent on random-envs environments.
+
+### Troubleshooting
+- If having trouble while installing mujoco-py, see [#627](https://github.com/openai/mujoco-py/issues/627) to install all dependencies through conda.
 
 ## Citing
 If you use this repository, please consider citing
