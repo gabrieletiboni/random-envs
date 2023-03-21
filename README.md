@@ -67,6 +67,7 @@ See `train_random_envs.py` in [this repo](https://github.com/gabrieletiboni/sb3-
 
 ### Troubleshooting
 - If having trouble while installing mujoco-py, see [#627](https://github.com/openai/mujoco-py/issues/627) to install all dependencies through conda.
+- If installation goes wrong due to gym==0.21 as `error in gym setup command: 'extras_require'`, see https://github.com/openai/gym/issues/3176. There is a problem with the version of setuptools.
 
 ## Citing
 If you use this repository, please consider citing
