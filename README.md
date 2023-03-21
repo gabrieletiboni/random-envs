@@ -29,10 +29,18 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 
 ## Installation
 ```
+# Install mujoco 2.1 (or see https://github.com/openai/mujoco-py)
+wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
+mkdir ~/.mujoco
+mv mujoco210-linux-x86_64.tar.gz ~/.mujoco
+tar -xf ~/.mujoco/mujoco210-linux-x86_64.tar.gz
+
+# Install mujoco 2.1 dependencies through conda (sudo-free): https://github.com/openai/mujoco-py/issues/627
+
+# Install repo requirements and repo
 # git clone <this repo>
 cd random-envs
 pip install -r requirements.txt
-# Install mujoco 2.1 (see https://github.com/openai/mujoco-py and https://github.com/openai/mujoco-py/issues/627)
 pip install .
 ```
 NOTE: you need to have the mujoco physics engine installed on your system as a prerequisite, as mentioned in the [mujoco_py](https://github.com/openai/mujoco-py) package.
