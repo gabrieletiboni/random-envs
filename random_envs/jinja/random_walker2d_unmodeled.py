@@ -46,7 +46,7 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.dynamics_indexes = {0: 'foot', 1: 'thigh_left', 2: 'leg_left', 3: 'foot_left', 4: 'thighsize', 5: 'legsize', 6: 'footsize', 7: 'friction_right', 8: 'friction_left'}
+        self.dyn_ind_to_name = {0: 'foot', 1: 'thigh_left', 2: 'leg_left', 3: 'foot_left', 4: 'thighsize', 5: 'legsize', 6: 'footsize', 7: 'friction_right', 8: 'friction_left'}
 
         self.preferred_lr = 0.0005
         self.reward_threshold = 2200
@@ -73,7 +73,7 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
                'friction_right': (0.1, 3.0),
                'friction_left': (0.1, 3.0)
         }
-        return search_bounds_mean[self.dynamics_indexes[index]]
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for each dynamics
@@ -98,7 +98,7 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
                     'friction_left': 0.05
         }
 
-        return lowest_value[self.dynamics_indexes[index]]
+        return lowest_value[self.dyn_ind_to_name[index]]
 
 
     def get_task(self):

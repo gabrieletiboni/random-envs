@@ -39,7 +39,7 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.dynamics_indexes = {0: 'torsomass', 1: 'thighmass', 2: 'legmass', 3: 'footmass'}
+        self.dyn_ind_to_name = {0: 'torsomass', 1: 'thighmass', 2: 'legmass', 3: 'footmass'}
 
         self.preferred_lr = 0.0005 # --algo Sac -t 5M
         self.reward_threshold = 1750
@@ -55,7 +55,7 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
                'legmass': (0.5, 10.0),
                'footmass': (0.5, 10.0),
         }
-        return search_bounds_mean[self.dynamics_indexes[index]]
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for each dynamics
@@ -69,7 +69,7 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
                     'footmass': 0.1
         }
 
-        return lowest_value[self.dynamics_indexes[index]]
+        return lowest_value[self.dyn_ind_to_name[index]]
 
 
     def get_task(self):

@@ -52,7 +52,7 @@ class RandomHumanoidEnv(MujocoEnv, utils.EzPickle):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.dynamics_indexes = {0: 'mass0', 1: 'mass1', 2: 'mass2', 3: 'mass3',
+        self.dyn_ind_to_name = {0: 'mass0', 1: 'mass1', 2: 'mass2', 3: 'mass3',
                                  4: 'mass4', 5: 'mass5', 6: 'mass6', 7: 'mass7',
                                  8: 'mass8', 9: 'mass9', 10: 'mass10', 11: 'mass11', 12: 'mass12',
                                  13: 'damp1', 14: 'damp2', 15: 'damp3', 16: 'damp4', 17: 'damp5',
@@ -103,7 +103,7 @@ class RandomHumanoidEnv(MujocoEnv, utils.EzPickle):
                'damp16': (.2, 5.0),
                'damp17': (.2, 5.0),
         }
-        return search_bounds_mean[self.dynamics_indexes[index]]
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for each dynamics
@@ -145,7 +145,7 @@ class RandomHumanoidEnv(MujocoEnv, utils.EzPickle):
                     'damp17': .15,
         }
 
-        return lowest_value[self.dynamics_indexes[index]]
+        return lowest_value[self.dyn_ind_to_name[index]]
 
 
     def get_task(self):

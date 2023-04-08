@@ -80,6 +80,7 @@ class MujocoEnv(gym.Env):
         self.dr_training = False
         self.preferred_lr = None
         self.reward_threshold = None
+        self.dyn_ind_to_name = None
 
 
     def set_model_args(self, args):
@@ -183,6 +184,10 @@ class MujocoEnv(gym.Env):
 
     def sample_tasks(self, num_tasks=1):
         return np.stack([self.sample_task() for _ in range(num_tasks)])
+
+    def dyn_index_to_name(self, index):
+        assert self.dyn_ind_to_name is not None
+        return self.dyn_ind_to_name[index]
 
     def set_dr_distribution(self, dr_type, distr):
         if dr_type == 'uniform':

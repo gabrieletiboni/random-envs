@@ -40,7 +40,7 @@ class RandomHalfCheetahUnmodeled(MujocoEnv, utils.EzPickle):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.dynamics_indexes = {0: 'bfoot', 1: 'fthigh', 2: 'fshin', 3: 'ffoot', 4: 'friction' }
+        self.dyn_ind_to_name = {0: 'bfoot', 1: 'fthigh', 2: 'fshin', 3: 'ffoot', 4: 'friction' }
 
         self.preferred_lr = 0.0005 # --algo Sac -t 5M
         self.reward_threshold = 4500
@@ -59,7 +59,7 @@ class RandomHalfCheetahUnmodeled(MujocoEnv, utils.EzPickle):
                'ffoot': (0.5, 10.0),
                'friction': (0.1, 2.0),
         }
-        return search_bounds_mean[self.dynamics_indexes[index]]
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for each dynamics
@@ -77,7 +77,7 @@ class RandomHalfCheetahUnmodeled(MujocoEnv, utils.EzPickle):
                     'friction': 0.02,
         }
 
-        return lowest_value[self.dynamics_indexes[index]]
+        return lowest_value[self.dyn_ind_to_name[index]]
 
     def get_task(self):
         masses = np.array( self.sim.model.body_mass[4:] )
