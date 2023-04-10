@@ -8,7 +8,7 @@ class RandomEnv(gym.Env):
         of dynamics parameters
     """
 
-    def __init__(self, model_path, frame_skip):
+    def __init__(self):
         self.sampling = None
         self.dr_training = False
         self.preferred_lr = None

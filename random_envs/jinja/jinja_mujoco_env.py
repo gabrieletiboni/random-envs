@@ -41,6 +41,8 @@ class MujocoEnv(RandomEnv):
     """
 
     def __init__(self, model_path, frame_skip):
+        RandomEnv.__init__(self)
+
         if model_path.startswith("/"):
             fullpath = model_path
         else:
