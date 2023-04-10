@@ -9,20 +9,21 @@ Features:
 - Automatic sampling of new dynamics when env.reset() is called
 
 ## Environments
-|                               | dim $\xi$ | $\xi$                             | state noise |
-|-------------------------------|-----------|-----------------------------------|-------------|
-| RandomHopper-v0               | 4         | Link masses                       | -           |
-| RandomHopperNoisy-v0          | 4         | Link masses                       | $10^{-4}$   |
-| RandomHopperUnmodeled-v0      | 3         | Link masses                       | -           |
-| RandomHalfCheetah-v0          | 8         | Link masses, friction             | -           |
-| RandomHalfCheetahNoisy-v0     | 8         | Link masses, friction             | $10^{-4}$   |
-| RandomHalfCheetahUnmodeled-v0 | 5         | Link masses, friction             | -           |
-| RandomWalker2d-v0             | 13        | Link masses and lengths, friction | -           |
-| RandomWalker2dNoisy-v0        | 13        | Link masses and lengths, friction | $10^{-3}$   |
-| RandomWalker2dUnmodeled-v0    | 9         | Link masses and lengths, friction | -           |
-| RandomHumanoid-v0             | 30        | Link masses, joint damping        | -           |
-| RandomHumanoidNoisy-v0        | 30        | Link masses, joint damping        | $10^{-3}$   |
-| RandomHumanoidUnmodeled-v0    | 23        | Link masses, joint damping        | -           |
+|                               | dim $\xi$ | $\xi$                                  | state noise |
+|-------------------------------|-----------|----------------------------------------|-------------|
+| RandomCartPole-v0             | 4         | Gravity, Cart mass, Pole mass & length | -           |
+| RandomHopper-v0               | 4         | Link masses                            | -           |
+| RandomHopperNoisy-v0          | 4         | Link masses                            | $10^{-4}$   |
+| RandomHopperUnmodeled-v0      | 3         | Link masses                            | -           |
+| RandomHalfCheetah-v0          | 8         | Link masses, friction                  | -           |
+| RandomHalfCheetahNoisy-v0     | 8         | Link masses, friction                  | $10^{-4}$   |
+| RandomHalfCheetahUnmodeled-v0 | 5         | Link masses, friction                  | -           |
+| RandomWalker2d-v0             | 13        | Link masses and lengths, friction      | -           |
+| RandomWalker2dNoisy-v0        | 13        | Link masses and lengths, friction      | $10^{-3}$   |
+| RandomWalker2dUnmodeled-v0    | 9         | Link masses and lengths, friction      | -           |
+| RandomHumanoid-v0             | 30        | Link masses, joint damping             | -           |
+| RandomHumanoidNoisy-v0        | 30        | Link masses, joint damping             | $10^{-3}$   |
+| RandomHumanoidUnmodeled-v0    | 23        | Link masses, joint damping             | -           |
 
 where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unmodeled variants represent under-modeled parameterizations of the environments where dynamics parameters not included are misidentified by 20% (read more in Sec. 3.3 of our [work](https://arxiv.org/abs/2206.14661)).
 
