@@ -29,8 +29,19 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 
 ## Installation
 ```
+##### Install mujoco 2.1 (or see https://github.com/openai/mujoco-py) #####
+wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
+mkdir ~/.mujoco
+mv mujoco210-linux-x86_64.tar.gz ~/.mujoco
+tar -xf ~/.mujoco/mujoco210-linux-x86_64.tar.gz
+# Install mujoco 2.1 dependencies through conda (sudo-free): https://github.com/openai/mujoco-py/issues/627
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.mujoco/mujoco210/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
+
+##### Install repo requirements and repo #####
 # git clone <this repo>
 cd random-envs
+pip install -r requirements.txt
 pip install .
 ```
 NOTE: you need to have the mujoco physics engine installed on your system as a prerequisite, as mentioned in the [mujoco_py](https://github.com/openai/mujoco-py) package.
@@ -53,6 +64,10 @@ env.set_dr_training(False)
 ```
 See `test.py` for a pseudo-example in a sim-to-real transfer scenario. 
 See `train_random_envs.py` in [this repo](https://github.com/gabrieletiboni/sb3-gym-interface) for a full example of an actual training of an RL agent on random-envs environments.
+
+### Troubleshooting
+- If having trouble while installing mujoco-py, see [#627](https://github.com/openai/mujoco-py/issues/627) to install all dependencies through conda.
+- If installation goes wrong due to gym==0.21 as `error in gym setup command: 'extras_require'`, see https://github.com/openai/gym/issues/3176. There is a problem with the version of setuptools.
 
 ## Citing
 If you use this repository, please consider citing
