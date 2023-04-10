@@ -3,7 +3,7 @@ Gym environments with domain randomization (DR) support for sim-to-real research
 This repo uses the unmaintained version of [gym](https://github.com/openai/gym/), and the old mujoco bindings [mujoco_py](https://github.com/openai/mujoco-py).
 
 Features:
-- Gym environments: hopper, half-cheetah, walker2d, humanoid
+- Gym environments: cartpole, hopper, half-cheetah, walker2d, humanoid
 - Noisy and unmodeled variants for each environment
 - DR parametric distributions: uniform, normal, truncnormal
 - Automatic sampling of new dynamics when env.reset() is called
