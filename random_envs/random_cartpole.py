@@ -117,6 +117,8 @@ class RandomCartPoleEnv(RandomEnv):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
+        self.reward_threshold = 500
+
 
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized,
