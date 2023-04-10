@@ -99,13 +99,50 @@ class RandomCartPoleEnv(RandomEnv):
         self.seed()
         self.viewer = None
         self.state = None
-
         self.steps_beyond_done = None
 
         self.dyn_ind_to_name = {0: 'gravity',
                                 1: 'cart_mass',
                                 2: 'pole_mass',
                                 3: 'pole_length'}
+        self.original_task = np.array([
+                                self.gravity,
+                                self.cart_mass,
+                                self.pole_mass,
+                                self.pole_length
+                            ])
+        self.task_dim = self.original_task.shape[0]
+        self.min_task = np.zeros(self.task_dim)
+        self.max_task = np.zeros(self.task_dim)
+        self.mean_task = np.zeros(self.task_dim)
+        self.stdev_task = np.zeros(self.task_dim)
+
+
+    def get_search_bounds_mean(self, index):
+        """Get search bounds for the mean of the parameters optimized,
+        the stdev bounds are set accordingly in dropo.
+        """
+        search_bounds_mean = {
+               'gravity': (2., 20.0),
+               'cart_mass': (0.5, 3.0),
+               'pole_mass': (0.05, 0.3),
+               'pole_length': (0.1, 2.),
+        }
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
+
+    def get_task_lower_bound(self, index):
+        """Returns lowest feasible value for each dynamics
+
+        Used for resampling unfeasible values during domain randomization
+        """
+        lowest_value = {
+                    'gravity': 0.1,
+                    'cart_mass': 0.1,
+                    'pole_mass': 0.1,
+                    'pole_length': 0.1
+        }
+
+        return lowest_value[self.dyn_ind_to_name[index]]
 
     def get_task(self, taskid=None):
         # grav_range = 1., 20.
@@ -113,13 +150,6 @@ class RandomCartPoleEnv(RandomEnv):
         # pole_mass_range = 0.1, 0.1
         # pole_length_range = 0.3, 1.0
         # force_range = 5.0, 20.0
-
-        # gravity = rand_in_range(*grav_range)
-        # cart_mass = rand_in_range(*cart_mass_range)
-        # pole_mass = rand_in_range(*pole_mass_range)
-        # pole_length = rand_in_range(*pole_length_range)
-        # force = rand_in_range(*force_range)
-
         gravity = self.gravity
         cart_mass = self.cart_mass
         pole_mass = self.pole_mass
