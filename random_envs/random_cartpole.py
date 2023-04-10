@@ -120,13 +120,49 @@ class RandomCartPoleEnv(RandomEnv):
 
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized,
-        the stdev bounds are set accordingly in dropo.
+            when using Adaptive Domain Randomization (e.g. DROPO)
         """
         search_bounds_mean = {
                'gravity': (2., 20.0),
                'cart_mass': (0.5, 3.0),
                'pole_mass': (0.05, 0.3),
-               'pole_length': (0.1, 2.),
+               'pole_length': (0.1, 1.),
+        }
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
+
+    def get_task_lower_bound(self, index):
+        """Returns lowest feasible value for each dynamics
+
+        Used for resampling unfeasible values during domain randomization
+        """
+        lowest_value = {
+                    'gravity': 0.1,
+                    'cart_mass': 0.1,
+                    'pole_mass': 0.1,
+                    'pole_length': 0.1
+        }
+
+        return lowest_value[self.dyn_ind_to_name[index]]
+
+    def get_task(self):
+        gravity = self.gravity
+        cart_mass = self.cart_mass
+        pole_mass = self.pole_mass
+        pole_length = self.pole_length
+
+        return np.array([gravity, cart_mass, pole_mass, pole_length])
+
+    def set_task(self, *task):
+        """Set dynamics parameters
+
+            task : arr of [gravity, cart_mass, pole_mass, pole_length]
+        """
+        self.gravity = task[0]
+        self.cart_mass = task[1]
+               'gravity': (2., 20.0),
+               'cart_mass': (0.5, 3.0),
+               'pole_mass': (0.05, 0.3),
+               'pole_length': (0.1, 1.),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 
@@ -145,25 +181,14 @@ class RandomCartPoleEnv(RandomEnv):
         return lowest_value[self.dyn_ind_to_name[index]]
 
     def get_task(self, taskid=None):
-        # grav_range = 1., 20.
-        # cart_mass_range = 1.0, 1.0
-        # pole_mass_range = 0.1, 0.1
-        # pole_length_range = 0.3, 1.0
-        # force_range = 5.0, 20.0
         gravity = self.gravity
         cart_mass = self.cart_mass
         pole_mass = self.pole_mass
         pole_length = self.pole_length
 
-        return gravity, cart_mass, pole_mass, pole_length
+        return np.array([gravity, cart_mass, pole_mass, pole_length])
 
     def set_task(self, *task):
-        """Set dynamics parameters
-
-            task : arr of [gravity, cart_mass, pole_mass, pole_length]
-        """
-        self.gravity = task[0]
-        self.cart_mass = task[1]
         self.pole_mass = task[2]
         self.pole_length = task[3]
         self.total_mass = (self.pole_mass + self.cart_mass)
