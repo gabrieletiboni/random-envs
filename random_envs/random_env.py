@@ -1,6 +1,5 @@
 import gym
-
-
+import numpy as np
 
 class RandomEnv(gym.Env):
     """Superclass for all environments
