@@ -159,36 +159,6 @@ class RandomCartPoleEnv(RandomEnv):
         """
         self.gravity = task[0]
         self.cart_mass = task[1]
-               'gravity': (2., 20.0),
-               'cart_mass': (0.5, 3.0),
-               'pole_mass': (0.05, 0.3),
-               'pole_length': (0.1, 1.),
-        }
-        return search_bounds_mean[self.dyn_ind_to_name[index]]
-
-    def get_task_lower_bound(self, index):
-        """Returns lowest feasible value for each dynamics
-
-        Used for resampling unfeasible values during domain randomization
-        """
-        lowest_value = {
-                    'gravity': 0.1,
-                    'cart_mass': 0.1,
-                    'pole_mass': 0.1,
-                    'pole_length': 0.1
-        }
-
-        return lowest_value[self.dyn_ind_to_name[index]]
-
-    def get_task(self, taskid=None):
-        gravity = self.gravity
-        cart_mass = self.cart_mass
-        pole_mass = self.pole_mass
-        pole_length = self.pole_length
-
-        return np.array([gravity, cart_mass, pole_mass, pole_length])
-
-    def set_task(self, *task):
         self.pole_mass = task[2]
         self.pole_length = task[3]
         self.total_mass = (self.pole_mass + self.cart_mass)
