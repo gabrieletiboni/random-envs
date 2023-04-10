@@ -12,8 +12,8 @@ import numpy as np
 
 from random_envs.random_env import RandomEnv
 
-def rand_in_range(minv, maxv):
-    return np.random.rand() * (maxv-minv) + minv
+# def rand_in_range(minv, maxv):
+#     return np.random.rand() * (maxv-minv) + minv
 
 
 class RandomCartPoleEnv(RandomEnv):
@@ -72,11 +72,11 @@ class RandomCartPoleEnv(RandomEnv):
         RandomEnv.__init__(self)
 
         self.gravity = 9.8
-        self.masscart = 1.0
-        self.masspole = 0.1
-        self.total_mass = (self.masspole + self.masscart)
-        self.length = 0.5  # actually half the pole's length
-        self.polemass_length = (self.masspole * self.length)
+        self.cart_mass = 1.0
+        self.pole_mass = 0.1
+        self.total_mass = (self.pole_mass + self.cart_mass)
+        self.pole_length = 0.5  # actually half the pole's length
+        self.polemass_length = (self.pole_mass * self.pole_length)
         self.force_mag = 10.0
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = 'euler'
@@ -108,19 +108,24 @@ class RandomCartPoleEnv(RandomEnv):
                                 3: 'pole_length'}
 
     def get_task(self, taskid=None):
-        grav_range = 1., 20.
-        cart_mass_range = 1.0, 1.0
-        pole_mass_range = 0.1, 0.1
-        pole_length_range = 0.3, 1.0
-        force_range = 5.0, 20.0
+        # grav_range = 1., 20.
+        # cart_mass_range = 1.0, 1.0
+        # pole_mass_range = 0.1, 0.1
+        # pole_length_range = 0.3, 1.0
+        # force_range = 5.0, 20.0
 
-        gravity = rand_in_range(*grav_range)
-        cart_mass = rand_in_range(*cart_mass_range)
-        pole_mass = rand_in_range(*pole_mass_range)
-        pole_length = rand_in_range(*pole_length_range)
-        force = rand_in_range(*force_range)
+        # gravity = rand_in_range(*grav_range)
+        # cart_mass = rand_in_range(*cart_mass_range)
+        # pole_mass = rand_in_range(*pole_mass_range)
+        # pole_length = rand_in_range(*pole_length_range)
+        # force = rand_in_range(*force_range)
 
-        return gravity, cart_mass, pole_mass, pole_length, force
+        gravity = self.gravity
+        cart_mass = self.cart_mass
+        pole_mass = self.pole_mass
+        pole_length = self.pole_length
+
+        return gravity, cart_mass, pole_mass, pole_length
 
     def set_task(self, *task):
         """Set dynamics parameters
@@ -128,10 +133,10 @@ class RandomCartPoleEnv(RandomEnv):
             task : arr of [gravity, cart_mass, pole_mass, pole_length]
         """
         self.gravity = task[0]
-        self.masscart = task[1]
-        self.masspole = task[2]
-        self.length = task[3]
-        self.total_mass = (self.masspole + self.masscart)
+        self.cart_mass = task[1]
+        self.pole_mass = task[2]
+        self.pole_length = task[3]
+        self.total_mass = (self.pole_mass + self.cart_mass)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -149,7 +154,7 @@ class RandomCartPoleEnv(RandomEnv):
         # For the interested reader:
         # https://coneural.org/florian/papers/05_cart_pole.pdf
         temp = (force + self.polemass_length * theta_dot ** 2 * sintheta) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta * temp) / (self.length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass))
+        thetaacc = (self.gravity * sintheta - costheta * temp) / (self.pole_length * (4.0 / 3.0 - self.pole_mass * costheta ** 2 / self.total_mass))
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == 'euler':
@@ -204,7 +209,7 @@ class RandomCartPoleEnv(RandomEnv):
         scale = screen_width/world_width
         carty = 100  # TOP OF CART
         polewidth = 10.0
-        polelen = scale * (2 * self.length)
+        polelen = scale * (2 * self.pole_length)
         cartwidth = 50.0
         cartheight = 30.0
 
@@ -257,9 +262,9 @@ class RandomCartPoleEnv(RandomEnv):
 
 
 gym.envs.register(
-        id="RandomCartPole-v0",
-        entry_point="%s:RandomCartPoleEnv" % __name__,
-        max_episode_steps=500,
-        kwargs={}
+    id="RandomCartPole-v0",
+    entry_point="%s:RandomCartPoleEnv" % __name__,
+    max_episode_steps=500,
+    kwargs={}
 )
 
