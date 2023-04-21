@@ -33,8 +33,9 @@ where $\xi \in \mathbb{R}^{dim \ \xi}$ is the dynamics parameter vector. The unm
 ##### Install mujoco 2.1 (or see https://github.com/openai/mujoco-py) #####
 wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
 mkdir ~/.mujoco
-mv mujoco210-linux-x86_64.tar.gz ~/.mujoco
-tar -xf ~/.mujoco/mujoco210-linux-x86_64.tar.gz
+mv ~/mujoco210-linux-x86_64.tar.gz ~/.mujoco
+cd ~/.mujoco
+tar -xf mujoco/mujoco210-linux-x86_64.tar.gz
 # Install mujoco 2.1 dependencies through conda (sudo-free): https://github.com/openai/mujoco-py/issues/627
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.mujoco/mujoco210/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
