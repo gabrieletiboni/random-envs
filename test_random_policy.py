@@ -10,13 +10,10 @@ import gym
 import random_envs
 
 def main():
-	render = True
-	dr_on_reset = True
-
 	env = gym.make(args.env)
 
 	env.set_dr_distribution(dr_type='uniform', distr=env.get_uniform_dr_by_percentage(percentage=0.25))
-	if dr_on_reset:
+	if args.udr:
 		env.set_dr_training(True)
 
 	state = env.reset()
@@ -30,7 +27,7 @@ def main():
 	while True:
 		state, reward, done, info = env.step(env.action_space.sample())
 		
-		if render:
+		if args.render:
 			env.render()
 
 		if done:
@@ -40,6 +37,8 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', default='RandomCartPole-v0', type=str, help='Random envs environments')
+    parser.add_argument('--render', default=False, action='store_true', help='Rendering')
+    parser.add_argument('--udr', default=False, action='store_true', help='Uniform domain randomization: sample new dynamics parameter at every reset. Uniform bounds deviated 25\% from the nominal values')
 
     return parser.parse_args()
 args = parse_args()
