@@ -11,8 +11,13 @@ import random_envs
 
 def main():
 	render = True
+	dr_on_reset = True
 
 	env = gym.make(args.env)
+
+	env.set_dr_distribution(dr_type='uniform', distr=env.get_uniform_dr_by_percentage(percentage=0.25))
+	if dr_on_reset:
+		env.set_dr_training(True)
 
 	state = env.reset()
 	done = False
