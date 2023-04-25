@@ -1,0 +1,99 @@
+<mujoco model="lumi_with_table v200">
+    <asset>
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512"/>
+        <material name="MatGnd" reflectance="0.5" texture="texplane" texrepeat="1 1" texuniform="true" />
+        <mesh name="mount" file="mount.stl" />
+        <mesh name="hockeyblade" file="hockeyblade.stl" />
+        {# Additional assets will be included in this block. #}
+        {% block assets %}
+            <texture name="yellow_black_checker" type="2d" builtin="checker" rgb1="1 1 0" rgb2=".0 .0 .0" width="512" height="512"/>
+            <material name="checker_material" texture="yellow_black_checker" texrepeat="1 1" texuniform="true" />
+            <material name="red_target" rgba="0.847 0.066 0.349 1"/>
+            <material name="yellow" rgba="0.941 0.784 0.031 1"/>
+            <material name="green" rgba="0.161 0.749 0.071 1"/>
+            <material name="orange" rgba="0.929 0.49 0.227 1" specular="0.2"/>
+            <material name="panda" rgba=".95 .99 .92 1" />
+            <material name="red" rgba="0.925 0.043 0.263 1" />
+            <material name="light_blue" rgba="0.4 0.78 0.957 1" />
+            <material name="metal" rgba=".867 .894 .89 1" specular="1" />
+            <material name="finger_black" rgba="0.1 0.1 0.1 1" specular="0.05"/>
+            <material name="panda_robot" rgba="0.96 0.96 0.96 1" specular="0.3" reflectance="0.0" shininess="0.3" emission=".0"/>
+        {% endblock %}
+    </asset>
+
+    <default>
+        {# Use this block e.g. to define contact pairs. #}
+        {% block default %}
+        {% endblock %}
+    </default>
+
+    {% include "assets.xml" %}
+
+    {# Add mesh search path #}
+    {% for meshdir in mesh_dirs %}
+        <compiler meshdir="{{ meshdir }}"/>
+    {% endfor %}
+
+    {# Set robot_id to 0 unless anything else was passed #}
+    {# Other values may be useful for multi-robot scenarios #}
+    {% set robot_id=robot_id | default(0) %}
+    {% set hand_type=hand_type | default("default") %}
+
+    <worldbody>
+        <light diffuse="0.5 0.5 0.5" directional="false" castshadow="false"
+            pos="-1 5 9.0" specular="0.2 0.2 0.2" />
+        <light diffuse="0.5 0.5 0.5" directional="false" castshadow="false"
+            pos="-1 -5 9.0" specular="0.2 0.2 0.2" />
+        <light diffuse="0.4 0.4 0.4" directional="false" castshadow="false"
+            pos="3 0 9.0" specular="0.3 0.3 0.3" ambient=".5 .5 .5" />
+        <geom name="ground" pos="0 0 0" size="5 5 10" material="MatGnd" type="plane" contype="1" conaffinity="1" />
+        {% block worldbody %}
+            {% include "franka_chain.xml" %}
+        {% endblock %}
+
+        {% block cameras %}
+            <camera name='front_camera' pos='2.0 -0.2 1.2' euler='1.2 1.4 0.4' />
+            <camera name='top_camera' pos='0.0 0.0 3.0' euler='0. 0. 0.0' />
+            <camera name='side_camera' pos='0.6 -1.6 .8' euler='1.4 0 0' />
+        {% endblock %}
+
+        {% if actuator_type == "mocap" %}
+            {# Instead of a real actuator, attach a mocap body to the gripper #}
+            <body mocap="true" name="mocap" pos="6.57405567e-01 -2.88391164e-04  1.18614673e+00" euler="0 -1.57 0" >
+                <geom conaffinity="0" contype="0" pos="0 0 0" rgba="0 0.5 0 0.7" size="0.005 0.005 0.005" type="box"></geom>
+                <geom conaffinity="0" contype="0" pos="0 0 0" rgba="0 0.5 0 0.1" size="1 0.005 0.005" type="box"></geom>
+                <geom conaffinity="0" contype="0" pos="0 0 0" rgba="0 0.5 0 0.1" size="0.005 1 0.001" type="box"></geom>
+                <geom conaffinity="0" contype="0" pos="0 0 0" rgba="0 0.5 0 0.1" size="0.005 0.005 1" type="box"></geom>
+            </body>
+        {% endif %}
+    </worldbody>
+
+    <contact>
+    {# Use this block to assign contact pairs (defined in default) to geoms #}
+    {% block contact %}
+    {% endblock %}
+    </contact>
+
+    {# Actuators will be included here #}
+    {% block actuators %}
+        {% set actuator_type=actuator_type | default("position") %}
+        {% if actuator_type == "torque" %}
+            {% include "torque_actuators.xml" %}
+        {% elif actuator_type == "position" %}
+            {% include "position_actuators.xml" %}
+        {% elif actuator_type == "mocap" %}
+            {# Instead of a real actuator, attach a mocap body to the gripper #}
+            {# Attach the mocap body to the gripper #}
+            <equality>
+                <weld body1="mocap" body2="panda{{ robot_id }}_end_effector_vb" solimp="0.9 0.95 0.001" solref="1e-4 1" />
+            </equality>
+        {% endif %}
+    {% endblock %}
+    <equality>
+        <joint joint1="panda{{ robot_id }}_finger_joint1" polycoef="0 1 0 0 0" solref="1e-3 1"/>
+        <joint joint1="panda{{ robot_id }}_finger_joint2" polycoef="0 1 0 0 0" solref="1e-3 1"/>
+    </equality>
+
+    <size njmax="2000" nconmax="1000" />
+
+</mujoco>

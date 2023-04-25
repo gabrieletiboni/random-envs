@@ -1,0 +1,39 @@
+{% if finger_type == "3dprinted" %}
+    {% set hand_params.finger_viz_mesh = "finger_lumi_plastic" %}
+    {% set hand_params.finger_col_mesh = "finger_lumi_plastic" %}
+    {% set hand_params.finger_material = "finger_black" %}
+    {% set hand_params.end_effector_shift = "0 0 .260" %}
+{% elif finger_type == "original" %}
+    {% set hand_params.finger_viz_mesh = "finger_original" %}
+    {% set hand_params.finger_col_mesh = "finger_original" %}
+    {% set hand_params.finger_material = "finger_black" %}
+    {% set hand_params.end_effector_shift = "0 0 .210" %}
+{% else %}
+    {% set hand_params.finger_viz_mesh = "finger_viz" %}
+    {% set hand_params.finger_col_mesh = "finger_col" %}
+    {% set hand_params.finger_material = "finger_black" %}
+    {% set hand_params.end_effector_shift = "0 0 .210" %}
+{% endif %}
+
+<geom class="panda_viz" mesh="link7_viz" material="panda_robot" />
+<geom class="panda_col" mesh="link7_col" mass="{{ 0.2 * joint_mass_scale[7]|float }}"/>
+<geom pos="0 0 0.107" quat="0.92388 0 0 -0.382683" class="panda_viz" mesh="hand_viz" material="panda_robot" />
+<geom pos="0 0 0.107" quat="0.92388 0 0 -0.382683" class="panda_col" mesh="hand_col" mass="0.81909"/>
+<body name="panda{{ robot_id }}_leftfinger" pos="0 0 0.1654" quat="0.92388 0 0 -0.382683" childclass='panda_finger'>
+    <inertial pos="-1.57863e-05 0.0118731 0.0434103" quat="0.705868 0.0310348 -0.0314925 0.706962" 
+              mass="0.0927059" diaginertia="6.57134e-05 6.09611e-05 1.09932e-05" />
+    <joint name="panda{{ robot_id }}_finger_joint1"  axis="0 1 0" type="slide" range="0 0.04" class="panda_finger"/>
+    <geom class="panda_viz" mesh="{{ hand_params.finger_viz_mesh }}" material="{{ hand_params.finger_material }}" />
+    <geom class="panda_col" mesh="{{ hand_params.finger_col_mesh }}" name="panda{{ robot_id }}_finger1" />
+    <geom size="0.0185 0.0120 0.0175" pos="0 0.014 0.015" type="box" euler='.03 0 0' />
+
+</body>
+<body name="panda{{ robot_id }}_rightfinger" pos="0 0 0.1654" quat="0.92388 0 0 -0.382683"  childclass='panda_finger'>
+    <inertial pos="1.57863e-05 -0.0118731 0.0434103" quat="0.705868 -0.0310348 0.0314925 0.706962"
+              mass="0.0927059" diaginertia="6.57134e-05 6.09611e-05 1.09932e-05" />
+    <joint name="panda{{ robot_id }}_finger_joint2" axis="0 -1 0" type="slide" range="0 0.04" class="panda_finger"/>
+    <geom quat="0 0 0 1" class="panda_viz" mesh="{{ hand_params.finger_viz_mesh }}" material="{{ hand_params.finger_material }}" />
+    <geom quat="0 0 0 1" class="panda_col" mesh="{{ hand_params.finger_col_mesh }}" name="panda{{ robot_id }}_finger2"/>
+
+    <geom size="0.0185 0.0120 0.0175" pos="0 -.014 0.015" type="box" euler='-.03 0 0' />
+</body>

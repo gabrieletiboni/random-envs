@@ -1,0 +1,74 @@
+<!-- =================================================
+    Copyright 2018 Vikash Kumar 
+    Model   :: Franka (MuJoCoV2.0)
+    Author  :: Vikash Kumar (vikashplus@gmail.com)
+    source  :: https://github.com/vikashplus/franka_sim
+    License :: Under Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+====================================================== -->
+
+{% set init_joint_pos=init_joint_pos|default(["0", "0.3491", "0", "-1.2217", "0", "0", "0"]) %}
+{% set joint_mass_scale=joint_mass_scale|default(["1.", "1.", "1.", "1.", "1.", "1.", "1.", "1."]) %}
+{% set hand_params=namespace() %}
+{% set hand_params.end_effector_shift = "0 0 0.107" %}
+
+<!-- Robot limits pulled from https://frankaemika.github.io/docs/control_parameters.html#constants -->
+
+    <body name="panda{{ robot_id }}_link0" childclass="panda" >
+        <geom class="panda_viz" mesh="link0_viz" material="panda_robot" />
+        <geom class="panda_col" mesh="link0_col" mass="{{ 2.91242 * joint_mass_scale[0]|float }}"/>
+        <body name="panda{{ robot_id }}_link1" pos="0 0 0.333" euler="0 0 {{ init_joint_pos[0] }}">
+            <joint name="panda{{ robot_id }}_joint1" range="-2.8973 2.8973" class="panda_arm" ref="{{ init_joint_pos[0] }}"/>
+            <geom class="panda_viz" mesh="link1_viz" material="panda_robot" />
+            <geom class="panda_col" mesh="link1_col" mass="{{ 2.7063 * joint_mass_scale[1]|float }}"/>
+            <body name="panda{{ robot_id }}_link2" pos="0 0 0" euler="-1.57 0 {{ init_joint_pos[1] }}">
+                <joint name="panda{{ robot_id }}_joint2" range="-1.7628 1.7628" class="panda_arm" ref="{{ init_joint_pos[1] }}" />
+                <geom class="panda_viz" mesh="link2_viz" material="panda_robot" />
+                <geom class="panda_col" mesh="link2_col" mass="{{ 2.73046 * joint_mass_scale[2]|float }}"/>
+                <body name="panda{{ robot_id }}_link3" pos="0 -0.316 0" euler="1.57 0 {{ init_joint_pos[2] }}">
+                    <joint name="panda{{ robot_id }}_joint3" range="-2.8973 2.8973" class="panda_arm" ref="{{ init_joint_pos[2] }}" />
+                    <geom class="panda_viz" mesh="link3_viz" material="panda_robot" />
+                    <geom class="panda_col" mesh="link3_col" mass="{{ 2.04104 * joint_mass_scale[3]|float }}"/>
+                    <body name="panda{{ robot_id }}_link4" pos="0.0825 0 0" euler="1.57 0 {{ init_joint_pos[3] }}">
+                        <joint name="panda{{ robot_id }}_joint4" range="-3.0718 -0.0698" class="panda_arm" ref="{{ init_joint_pos[3] }}" />
+                        <geom class="panda_viz" mesh="link4_viz" material="panda_robot" />
+                        <geom class="panda_col" mesh="link4_col" mass="{{ 2.08129 * joint_mass_scale[4]|float }}"/>
+                        <body name="panda{{ robot_id }}_link5" pos="-0.0825 0.384 0" euler="-1.57 0 {{ init_joint_pos[4] }}">
+                            <joint name="panda{{ robot_id }}_joint5" range="-2.8973 2.8973" class="panda_forearm" ref="{{ init_joint_pos[4]|float }}" />
+                            <geom class="panda_viz" mesh="link5_viz" material="panda_robot" />
+                            <geom class="panda_col" mesh="link5_col" mass="{{ 3.00049 * joint_mass_scale[5]|float }}"/>
+                            <body name="panda{{ robot_id }}_link6" pos="0 0 0" euler='1.57 0 {{ 1.57 + init_joint_pos[5]|float }}'>
+                                <joint name="panda{{ robot_id }}_joint6" range="-1.6573 2.1127" class="panda_forearm" ref="{{ init_joint_pos[5] }}"/>
+                                <!-- <body name="panda{{ robot_id }}_link6" pos="0 0 0" quat="0.707107 0.707107 0 0"> -->
+                                <!-- <joint name="panda{{ robot_id }}_joint6" range="-0.0873 3.8223" class="panda_forearm"/> -->
+                                <geom class="panda_viz" mesh="link6_viz" material="panda_robot" />
+                                <geom class="panda_col" mesh="link6_col" mass="{{ 1.3235 * joint_mass_scale[6]|float }}"/>
+                                <body name="panda{{ robot_id }}_link7" pos="0.088 0 0" euler='1.57 0 {{ 0.7854 + init_joint_pos[6]|float }}'>
+                                    <joint name="panda{{ robot_id }}_joint7" range="-2.8973 2.8973" class="panda_forearm" ref="{{ init_joint_pos[6] }}"/>
+                                    <!-- <body name="panda{{ robot_id }}_link7" pos="0.088 0 0" quat="0.707107 0.707107 0 0"> -->
+                                    <!-- <joint name="panda{{ robot_id }}_joint7" range="-2.9671 2.9671" class="panda_forearm"/> -->
+                                    <geom class="panda_viz" mesh="link7_viz" material="panda_robot" />
+                                    <geom class="panda_col" mesh="link7_col" mass="{{ 0.2 * joint_mass_scale[7]|float }}"/>
+                                    {% block hand %}
+                                        {% if hand_type == "default" %}
+                                            {% include "franka_hand.xml" %}
+                                        {% elif hand_type == "thrower" %}
+                                            {% include "thrower.xml" %}
+                                        {% elif hand_type == "hockeystick" %}
+                                            {% include "hockeystick.xml" %}
+                                        {% elif hand_type == "string_peg" %}
+                                            {% include "string_peg_tool.xml" %}
+                                        {% endif %}
+                                    {% endblock %}
+
+                                    <site name='panda{{ robot_id }}_end_effector' pos="{{ hand_params.end_effector_shift }}" size='0.01' euler='0 0 -0.785398'/>
+                                    <body name='panda{{ robot_id }}_end_effector_vb' pos="{{ hand_params.end_effector_shift }}" euler='0 0 -0.785398'/>
+
+                                    <camera name='hand_camera' pos='-0.03 0.03 .1' euler='3.1416 0 -.785398' />
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </body>
