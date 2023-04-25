@@ -163,7 +163,7 @@ class RandomEnv(gym.Env):
                     obs = truncnorm.rvs(a, b, loc=mean, scale=std)
 
                     attempts += 1
-                    if attempts > 2:
+                    if attempts > 5:
                         obs = lower_bound
 
                 sample.append( obs )
@@ -182,7 +182,7 @@ class RandomEnv(gym.Env):
                     obs = np.random.randn()*std + mean
 
                     attempts += 1
-                    if attempts > 2:
+                    if attempts > 5:
                         raise Exception('Not all samples were above > 0.1 after 2 attempts')
 
                 sample.append( obs )
