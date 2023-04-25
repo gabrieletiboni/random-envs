@@ -174,16 +174,16 @@ class RandomEnv(gym.Env):
             sample = []
 
             for mean, std in zip(self.mean_task, self.stdev_task):
+                lower_bound = self.get_task_lower_bound(i)
 
-                # Assuming all parameters > 0.1
                 attempts = 0
                 obs = np.random.randn()*std + mean
-                while obs < 0.1:
+                while obs < lower_bound:
                     obs = np.random.randn()*std + mean
 
                     attempts += 1
                     if attempts > 5:
-                        raise Exception('Not all samples were above > 0.1 after 2 attempts')
+                        obs = lower_bound
 
                 sample.append( obs )
 
