@@ -12,7 +12,7 @@ Randomizations:
 import numpy as np
 import gym
 from gym import utils
-from random_envs.jinja.jinja_mujoco_env import MujocoEnv
+from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 from copy import deepcopy
 import pdb
 
@@ -33,9 +33,10 @@ class RandomWalker2dEnv(MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
         self.original_masses = self.sim.model.body_mass[1:]
-        self.current_lengths = np.array(self.original_lengths)
         self.original_friction = np.array([0.9, 1.9])
-        self.task_dim = self.original_masses.shape[0] + self.current_lengths.shape[0] + self.original_friction.shape[0]
+        self.nominal_values = np.concatenate([self.original_masses, self.original_lengths, self.original_friction])
+        self.task_dim = self.nominal_values.shape[0]
+        self.current_lengths = np.array(self.original_lengths)
 
         self.min_task = np.zeros(self.task_dim)
         self.max_task = np.zeros(self.task_dim)

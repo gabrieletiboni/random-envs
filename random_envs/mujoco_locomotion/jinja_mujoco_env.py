@@ -9,7 +9,7 @@ from gym import error, spaces
 from gym.utils import seeding
 from scipy.stats import truncnorm
 
-from random_envs.jinja.template_renderer import TemplateRenderer
+from random_envs.mujoco_locomotion.template_renderer import TemplateRenderer
 from random_envs.random_env import RandomEnv
 
 try:

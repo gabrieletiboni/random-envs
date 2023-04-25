@@ -16,7 +16,7 @@ from copy import deepcopy
 import numpy as np
 import gym
 from gym import utils
-from random_envs.jinja.jinja_mujoco_env import MujocoEnv
+from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 from scipy.stats import truncnorm
 
 def mass_center(model, sim):
@@ -44,7 +44,8 @@ class RandomHumanoidEnv(MujocoEnv, utils.EzPickle):
         self.original_masses = np.copy(self.sim.model.body_mass[1:])
         self.original_damping = np.copy(self.sim.model.dof_damping[6:])
 
-        self.task_dim = self.original_masses.shape[0] + self.original_damping.shape[0]
+        self.nominal_values = np.concatenate([self.original_masses,self.original_damping])
+        self.task_dim = self.nominal_values.shape[0]
 
         self.min_task = np.zeros(self.task_dim)
         self.max_task = np.zeros(self.task_dim)

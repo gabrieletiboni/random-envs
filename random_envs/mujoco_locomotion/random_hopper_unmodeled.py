@@ -8,7 +8,7 @@
 import numpy as np
 import gym
 from gym import utils
-from random_envs.jinja.jinja_mujoco_env import MujocoEnv
+from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 import pdb
 from copy import deepcopy
 import csv
@@ -29,7 +29,8 @@ class RandomHopperUnmodeledEnv(MujocoEnv, utils.EzPickle):
 
         # Dynamics parameters to randomize: 3 masses
         self.original_masses = self.sim.model.body_mass[2:]
-        self.task_dim = self.original_masses.shape[0]
+        self.nominal_values = np.concatenate([self.original_masses])
+        self.task_dim = self.nominal_values.shape[0]
 
         self.min_task = np.zeros(self.task_dim)
         self.max_task = np.zeros(self.task_dim)
