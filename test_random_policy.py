@@ -1,7 +1,12 @@
 """Random policy on RandomEnvs environments
 
 	Example:
-		python test_random_policy.py --env RandomHopper-v0
+		(no-rendering)
+		unset LD_PRELOAD; python test_random_policy.py --env RandomHopper-v0
+
+		(rendering)
+			export LD_PRELOAD=$CONDA_PREFIX/lib/libGLEW.so; python test_random_policy.py --env RandomHopper-v0 --render
+			NOTE: the libGLEW.so could be located elsewhere (https://github.com/openai/mujoco-py/issues/268)
 """
 import argparse
 import pdb
@@ -12,8 +17,8 @@ import random_envs
 def main():
 	env = gym.make(args.env)
 
-	env.set_dr_distribution(dr_type='uniform', distr=env.get_uniform_dr_by_percentage(percentage=0.25))
 	if args.udr:
+		env.set_dr_distribution(dr_type='uniform', distr=env.get_uniform_dr_by_percentage(percentage=0.25))
 		env.set_dr_training(True)
 
 	state = env.reset()
