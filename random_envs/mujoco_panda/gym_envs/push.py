@@ -846,11 +846,14 @@ class PandaPushEnv(PandaGymEnvironment):
 #
 #
 #
-# THESE ARE THE HEAVYBOX ENVS FOR THE DROPO PUSHING TASK
-push_goal_low = np.array([0.3, -0.3])
-push_goal_high = np.array([0.6, 0.3])
-push_start_low = np.array([0.4, -0.2])
-push_start_high = np.array([0.6, 0.2])
+#
+### Goal distribution
+# push_goal_low = np.array([0.3, -0.3])
+# push_goal_high = np.array([0.6, 0.3])
+
+### Starting box distribution (see franka_heavybox on the arg name to change this)
+# push_start_low = np.array([0.4, -0.2])
+# push_start_high = np.array([0.6, 0.2])
 
 panda_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
 
