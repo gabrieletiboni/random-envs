@@ -39,8 +39,19 @@ def soft_tanh_limit(x, low, high, betas=(0.35, 0.35), linear_coeff=1e-3, square_
 def distance_penalty(d, w=1, v=1, alpha=1e-3):
     return -w*d**2 - v*np.log(d**2 + alpha)
 
-# Action preprocessing
+
 def get_preprocess_action(env, command_type, clip=True):
+    """Preprocess policy action in [-1,1] to the corresponding interval
+        before the action interpolator and before the low-level controller.
+        
+        It uses the high-level policy frequency (env.dt=20Hz) to compute
+        the desired target position or torque.
+
+        normalized vel ---> target pos after 20ms
+        normalized acc ---> target pos after 20ms
+        normalized torque ---> real torque
+        ...
+    """
     if command_type == "delta_vel":
         def preprocess_action(action):
             # Assume actions are vel deltas and output of tanh...
