@@ -6,8 +6,11 @@
         <mesh name="hockeyblade" file="hockeyblade.stl" />
         {# Additional assets will be included in this block. #}
         {% block assets %}
+
+            {# Set box transparency #}
+            {% set box_transparency=box_transparency | default(0.5) %}
             <texture name="yellow_black_checker" type="2d" builtin="checker" rgb1="1 1 0" rgb2=".0 .0 .0" width="512" height="512"/>
-            <material name="checker_material" texture="yellow_black_checker" texrepeat="1 1" texuniform="true" />
+            <material name="checker_material" texture="yellow_black_checker" rgba="1 1 1 {{ box_transparency }}" texrepeat="1 1" texuniform="true" />
             <material name="red_target" rgba="0.847 0.066 0.349 1"/>
             <material name="yellow" rgba="0.941 0.784 0.031 1"/>
             <material name="green" rgba="0.161 0.749 0.071 1"/>
