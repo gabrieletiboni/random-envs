@@ -9,13 +9,13 @@ from collections import OrderedDict
 
 
 class PandaReachEnv(PandaGymEnvironment):
-    def __init__(self, model_file, controller, action_interpolator, repeat_kwargs,
+    def __init__(self, model_file, controller, action_interpolator, action_repeat_kwargs,
                  model_kwargs={}, controller_kwargs={}, render_camera="side_camera",
                  render_res=(320, 240), task_reward="target", command_type="new_pos",
                  acceleration_penalty_factor=1e-1, limit_power=2,
                  randomizations={}, reset_goal="random", control_penalty_coeff=1.):
         PandaGymEnvironment.__init__(self, model_file, controller, action_interpolator,
-                              repeat_kwargs, model_kwargs, controller_kwargs,
+                              action_repeat_kwargs, model_kwargs, controller_kwargs,
                               render_camera, render_res, command_type,
                               acceleration_penalty_factor, limit_power,
                               randomizations)
@@ -126,7 +126,7 @@ register_panda_env(
         "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
         "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
     action_interpolator=LinearInterpolator,
-    action_repeat_args={"start_value": env_field("joint_pos")},
+    action_repeat_kwargs={"start_value": env_field("joint_pos")},
     model_args = {"actuator_type": "torque", "with_goal": True,
                   "finger_type": "3dprinted"},
     max_episode_steps=500,
@@ -141,7 +141,7 @@ register_panda_env(
     controller=JointPositionController,
     controller_kwargs = {"clip_acceleration": False},
     action_interpolator=LinearInterpolator,
-    action_repeat_args={"start_value": env_field("joint_pos")},
+    action_repeat_kwargs={"start_value": env_field("joint_pos")},
     model_args = {"actuator_type": "torque", "with_goal": True,
                   "finger_type": "3dprinted", "reduce_damping": True,
                   "limit_ctrl": False, "limit_force": False},
@@ -179,7 +179,7 @@ for goal in "ABC":
             controller=JointPositionController,
             controller_kwargs = {"clip_acceleration": False},
             action_interpolator=QuadraticInterpolator,
-            action_repeat_args={"start_pos": env_field("joint_pos"),
+            action_repeat_kwargs={"start_pos": env_field("joint_pos"),
                 "start_vel": env_field("joint_vel"),
                 "dt": env_field("sim_dt")},
             model_args = {"actuator_type": "torque", "with_goal": True,
@@ -198,7 +198,7 @@ for goal in "ABC":
             controller=JointPositionController,
             controller_kwargs = {"clip_acceleration": False},
             action_interpolator=QuadraticInterpolator,
-            action_repeat_args={"start_pos": env_field("joint_pos"),
+            action_repeat_kwargs={"start_pos": env_field("joint_pos"),
                 "start_vel": env_field("joint_vel"),
                 "dt": env_field("sim_dt")},
             model_args = {"actuator_type": "torque", "with_goal": True,

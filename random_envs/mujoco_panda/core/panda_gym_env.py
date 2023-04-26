@@ -49,7 +49,7 @@ class PandaGymEnvironment(gym.Env, Environment):
     """
     The base class for all Panda gym environments.
     """
-    def __init__(self, model_file, controller, action_interpolator, repeat_kwargs,
+    def __init__(self, model_file, controller, action_interpolator, action_repeat_kwargs,
                  model_kwargs={}, controller_kwargs={}, render_camera="side_camera",
                  render_res=(320, 240), command_type=None,
                  acceleration_penalty_factor=1e-1, limit_power=2,
@@ -58,7 +58,7 @@ class PandaGymEnvironment(gym.Env, Environment):
         Environment.__init__(self, model_file, init_pos_jitter=init_pos_jitter, **model_kwargs)
         self.acceleration_penalty_factor = acceleration_penalty_factor
         self.limit_power = limit_power
-        if "num" not in repeat_kwargs:
+        if "num" not in action_repeat_kwargs:
             # No value was provided; just fix it to provide 20ms control intervals
             desired_interval = 2e-2
             sim_dt = self.sim.model.opt.timestep
@@ -69,10 +69,10 @@ class PandaGymEnvironment(gym.Env, Environment):
                 actual_dt = repeat_num_rounded * sim_dt
                 print(f"Repeater has a large rounding error. Expected sim dt:"
                       f" {desired_interval}. Actual: {actual_dt}")
-            repeat_kwargs["num"] = repeat_num_rounded
+            action_repeat_kwargs["num"] = repeat_num_rounded
 
         self.control_penalty_coeff = 1.
-        self._repeat_kwargs = dict(repeat_kwargs)
+        self._action_repeat_kwargs = dict(action_repeat_kwargs)
         self._action_repeat = action_interpolator
         self.interpolate = self._build_interpolator()
         self.controller = controller(self, **controller_kwargs)
@@ -187,15 +187,15 @@ class PandaGymEnvironment(gym.Env, Environment):
                     self._randomization_setters[name] = fn.__get__(self, cls)
 
     def _build_interpolator(self):
-        repeat_kwargs = dict(self._repeat_kwargs)
+        action_repeat_kwargs = dict(self._action_repeat_kwargs)
 
         # Link env_field objects to this environment instance
-        for k, v in repeat_kwargs.items():
+        for k, v in action_repeat_kwargs.items():
             if hasattr(v, "__call__") and hasattr(v, "__name__") \
                     and v.__name__ == "field_getter_mid":
-                repeat_kwargs[k] = v(self)
+                action_repeat_kwargs[k] = v(self)
 
-        interpolate = self._action_repeat(**repeat_kwargs)
+        interpolate = self._action_repeat(**action_repeat_kwargs)
         return interpolate
 
     def set_task_property(self, prop, value):

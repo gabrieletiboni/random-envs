@@ -19,9 +19,9 @@ from random_envs.mujoco_panda.core.utils import env_field, register_panda_env, d
 class PandaPushEnv(PandaGymEnvironment):
     """
     :description: The simple environment where the Panda robot is manipulating
-        a hockey puck.
+        a box.
     """
-    def __init__(self, model_file, controller, action_interpolator, repeat_kwargs,
+    def __init__(self, model_file, controller, action_interpolator, action_repeat_kwargs,
                  model_kwargs={}, controller_kwargs={}, render_camera="side_camera",
                  render_res=(320, 240), task_reward="guide", command_type="new_pos",
                  acceleration_penalty_factor=1e-2, limit_power=2, contact_penalties=False,
@@ -34,12 +34,12 @@ class PandaPushEnv(PandaGymEnvironment):
         self.start_low = start_low
         self.start_high = start_high
         PandaGymEnvironment.__init__(self, model_file, controller, action_interpolator,
-                              repeat_kwargs, model_kwargs, controller_kwargs,
+                              action_repeat_kwargs, model_kwargs, controller_kwargs,
                               render_camera, render_res, command_type,
                               acceleration_penalty_factor, limit_power,
                               randomizations, init_pos_jitter)
 
-        # Override observation space, we now also have the puck
+        # Override observation space, we now also have the box
         # (extra 3pos+3velp+3ori+3velr) and the goal (3pos)
         if rotation_in_obs == "none":
             rot_dims = 0
@@ -823,777 +823,6 @@ class PandaPushEnv(PandaGymEnvironment):
     # def this_is_panda():
     #     return True
 
-# ---------------------------- COMMENTED OUT START
-# # Register the environments
-# ## Sliding environments
-# ### Common domain randomization distributions for all DR environments
-# randomizations = {"friction": (np.array([.01, .01]), np.array([1., 1.]), "loguniform"),
-#                   "puck_mass": (0.03, 0.4)}
-
-# ### Sliding environments without domain randomization
-# #### Position control
-# register_panda_env(
-#     id="PandaSlide-PosCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True}
-# )
-
-# register_panda_env(
-#     id="PandaSlide-PosCtrl-NoReward-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "task_reward": None, "contact_penalties": True}
-# )
-
-# #### Impedance control
-# register_panda_env(
-#     id="PandaSlide-ImpCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointImpedanceController,
-#     controller_kwargs={
-#         # Values from Panda impedance control demo
-#         "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-#         "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True}
-# )
-
-
-# ### Sliding environments WITH domain randomization
-# #### Position control
-# register_panda_env(
-#     id="PandaSlide-Random-PosCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "randomizations": randomizations},
-# )
-
-# register_panda_env(
-#     id="PandaSlide-Random-PosCtrl-NoReward-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "task_reward": None, "contact_penalties": True,
-#                   "randomizations": randomizations},
-# )
-
-# #### Impedance control
-# register_panda_env(
-#     id="PandaSlide-Random-ImpCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointImpedanceController,
-#     controller_kwargs={
-#         # Values from Panda impedance control demo
-#         "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-#         "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True, "randomizations": randomizations},
-# )
-
-# #### Cartesian control with a MoCap body, similar to OpenAI FetchSlide
-# register_panda_env(
-#     id="PandaSlide-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=Controller,
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "mocap", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     env_kwargs = {"command_type": None, "limit_power": 4},
-#     max_episode_steps=500,
-# )
-
-# register_panda_env(
-#     id="PandaSlide-Random-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=Controller,
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "mocap", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     env_kwargs = {"command_type": None, "limit_power": 4,
-#                   "randomizations": randomizations},
-#     max_episode_steps=500,
-# )
-
-# ## Push environments
-# push_goal_low = np.array([0.3, -0.3])
-# push_goal_high = np.array([0.6, 0.3])
-# push_start_low = np.array([0.4, -0.2])
-# push_start_high = np.array([0.6, 0.2])
-
-# ### Push environments WITHOUT DR
-# #### Fixed puck start position
-# ##### Position control
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-MoreGuide-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#         "contact_penalties": True, "goal_low": push_goal_low,
-#         "goal_high": push_goal_high, "task_reward": "moreguide"}
-# )
-
-# # register_panda_env(
-# #     id="PandaPushFixedStart-PosCtrl-v0",
-# #     entry_point="%s:PandaPushEnv" % __name__,
-# #     model_file="franka_puck.xml",
-# #     controller=JointPositionController,
-# #     controller_kwargs = {"clip_acceleration": False},
-# #     action_interpolator=LinearInterpolator,
-# #     action_repeat_args={"start_value": env_field("joint_pos")},
-# #     model_args = {"actuator_type": "torque", "with_goal": True,
-# #                   "finger_type": "3dprinted", "reduce_damping": True,
-# #                   "limit_ctrl": False, "limit_force": False},
-# #     max_episode_steps=500,
-# #     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-# #         "contact_penalties": True, "goal_low": push_goal_low,
-# #         "goal_high": push_goal_high}
-# # )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-NoReward-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "task_reward": None, "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# ##### Impedance control
-# register_panda_env(
-#     id="PandaPushFixedStart-ImpCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointImpedanceController,
-#     controller_kwargs={
-#         # Values from Panda impedance control demo
-#         "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-#         "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "task_reward": None, "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# #### Random puck start position
-# ##### Position control
-# register_panda_env(
-#     id="PandaPush-PosCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#         "contact_penalties": True, "goal_low": push_goal_low,
-#         "goal_high": push_goal_high}
-# )
-
-# register_panda_env(
-#     id="PandaPush-PosCtrl-NoReward-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "task_reward": None, "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# ##### Impedance control
-# register_panda_env(
-#     id="PandaPush-ImpCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointImpedanceController,
-#     controller_kwargs={
-#         # Values from Panda impedance control demo
-#         "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-#         "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-
-# ##### Torque control
-# register_panda_env(
-#     id="PandaPush-TorqueCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "start_low": push_start_low, "start_high": push_start_high,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-NoConPen-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": False,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-LowAccPen-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#         "contact_penalties": True, "acceleration_penalty_factor": 1e-4,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-Reach-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "reach"}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-MoreGuide-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "moreguide"}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-MoreGuideMorePrec4-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "moreguide", "push_prec_alpha": 1e-4}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-MoreGuideMorePrec5-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "moreguide", "push_prec_alpha": 1e-5}
-# )
-
-# ### Higher friction for other push envs?
-# push_dynamics = {"friction": (np.array([.5, .5]), np.array([.5, .5]))}
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-MoreGuideMorePrec4-HighFric-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "moreguide", "push_prec_alpha": 1e-4,
-#                   "randomizations": push_dynamics}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-MoreGuide-HighFric-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True, "goal_low": push_goal_low,
-#                   "goal_high": push_goal_high, "task_reward": "moreguide",
-#                   "randomizations": push_dynamics}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-HighFric-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True, "goal_low": push_goal_low,
-#                   "goal_high": push_goal_high, "task_reward": "target",
-#                   "randomizations": push_dynamics}
-# )
-
-# fixed_push_goal = np.array([0.4, 0.1])
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-LessGuide-HighFric-FixGoal-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": fixed_push_goal, "goal_high": fixed_push_goal,
-#                   "task_reward": "lessguide", "push_prec_alpha": 1e-4,
-#                   "randomizations": push_dynamics}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-TorqueCtrl-LessGuide-HighFric-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted"},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "task_reward": "lessguide", "push_prec_alpha": 1e-4,
-#                   "randomizations": push_dynamics}
-# )
-
-# fixed_push_alt_goal = np.array([0.3, 0.0])
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-MoreGuide-HighFric-FixGoal-StartAtGoal-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": np.array([0, 0.50, 0, -2.15, 0, 1.10, 0])},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "moreguide",
-#                   "goal_low": fixed_push_alt_goal, "goal_high": fixed_push_alt_goal,
-#                   "randomizations": push_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-HighFric-FixGoal-StartAtGoal-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": np.array([0, 0.50, 0, -2.15, 0, 1.10, 0])},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_push_alt_goal, "goal_high": fixed_push_alt_goal,
-#                   "randomizations": push_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-HighFric-FixGoal-StartAtGoal-ConPen-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": np.array([0, 0.50, 0, -2.15, 0, 1.10, 0])},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": True, "task_reward": "target",
-#                   "goal_low": fixed_push_alt_goal, "goal_high": fixed_push_alt_goal,
-#                   "randomizations": push_dynamics, "init_pos_jitter": 0.}
-# )
-
-# push_goal_low = np.array([0.5, -0.3])
-# push_goal_high = np.array([0.8, 0.3])
-# fixed_push_alt_goal = np.array([0.7, 0.0])
-
-# puck_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-HighFric-AltFixGoal-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_push_alt_goal, "goal_high": fixed_push_alt_goal,
-#                   "randomizations": push_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-HighFric-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": push_goal_low, "goal_high": push_goal_high,
-#                   "randomizations": push_dynamics, "init_pos_jitter": 0.}
-# )
-
-# ## New Slide envs
-# slide_dynamics = {"friction": (np.array([.04, .04]), np.array([.04, .04]))}
-# fixed_slide_goal = np.array([0.8, 0.0])
-# slide_goal_low = np.array([0.8, -0.3])
-# slide_goal_high = np.array([1.2, 0.3])
-
-# # This has a shifted center of mass
-# offcenter_slide_dynamics = {"box_com": (np.array([0.0, 0.02, 0]), np.array([0.0, 0.02, 0])),
-#                             "_rebuild_model": None,
-#                             "friction": (np.array([.02, .02]), np.array([.02, .02]))}
-
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-FixGoal-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_slide_goal, "goal_high": fixed_slide_goal,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_args={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": slide_goal_low, "goal_high": slide_goal_high,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# # Same environments, but with a torque controller
-# register_panda_env(
-#     id="PandaSlideFixedStart-TorqueCtrl-FixGoal-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted",
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_slide_goal, "goal_high": fixed_slide_goal,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaSlideFixedStart-TorqueCtrl-StartAtPuck-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=TorqueController,
-#     controller_kwargs={"gravity_compensation": True},
-#     action_interpolator=Repeater,
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted",
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "torque", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": slide_goal_low, "goal_high": slide_goal_high,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-
-# #### Envs with quadratic interpolation
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-FixGoal-StartAtPuck-QI-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=QuadraticInterpolator,
-#     action_repeat_args={"start_pos": env_field("joint_pos"),
-#                         "start_vel": env_field("joint_vel"),
-#                         "dt": env_field("sim_dt")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_slide_goal, "goal_high": fixed_slide_goal,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-StartAtPuck-QI-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=QuadraticInterpolator,
-#     action_repeat_args={"start_pos": env_field("joint_pos"),
-#                         "start_vel": env_field("joint_vel"),
-#                         "dt": env_field("sim_dt")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "delta_vel", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": slide_goal_low, "goal_high": slide_goal_high,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# # Quad acc envs
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-FixGoal-StartAtPuck-Acc-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=QuadraticInterpolator,
-#     action_repeat_args={"start_pos": env_field("joint_pos"),
-#                         "start_vel": env_field("joint_vel"),
-#                         "dt": env_field("sim_dt")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "acc", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": fixed_slide_goal, "goal_high": fixed_slide_goal,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-
-# register_panda_env(
-#     id="PandaSlideFixedStart-PosCtrl-StartAtPuck-Acc-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_puck.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=QuadraticInterpolator,
-#     action_repeat_args={"start_pos": env_field("joint_pos"),
-#                         "start_vel": env_field("joint_vel"),
-#                         "dt": env_field("sim_dt")},
-#     model_args = {"actuator_type": "torque", "with_goal": True,
-#                   "finger_type": "3dprinted", "reduce_damping": True,
-#                   "limit_ctrl": False, "limit_force": False,
-#                   "init_joint_pos": puck_start_jpos},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "acc", "limit_power": 4,
-#                   "contact_penalties": False, "task_reward": "target",
-#                   "goal_low": slide_goal_low, "goal_high": slide_goal_high,
-#                   "randomizations": slide_dynamics, "init_pos_jitter": 0.}
-# )
-# ---------------------------------- COMMENTED OUT END
 
 #
 #
@@ -1623,24 +852,29 @@ push_goal_high = np.array([0.6, 0.3])
 push_start_low = np.array([0.4, -0.2])
 push_start_high = np.array([0.6, 0.2])
 
-puck_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
+panda_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
 
-register_panda_env(
-    id="PandaPushFixedStart-PosCtrl-v0",  # fixed start but init_pos_jitter is not set to zero. Fishy
-    entry_point="%s:PandaPushEnv" % __name__,
-    model_file="franka_heavybox.xml",
-    controller=JointPositionController,
-    controller_kwargs = {"clip_acceleration": False},
-    action_interpolator=LinearInterpolator,
-    action_repeat_args={"start_value": env_field("joint_pos")},
-    model_args = {"actuator_type": "torque", "with_goal": True,
-                  "finger_type": "3dprinted", "reduce_damping": True,
-                  "limit_ctrl": False, "limit_force": False},
-    max_episode_steps=500,
-    env_kwargs = {"command_type": "new_pos", "limit_power": 4,
-        "contact_penalties": True, "goal_low": push_goal_low,
-        "goal_high": push_goal_high}
-)
+# register_panda_env(
+#     id="PandaPushFixedStart-PosCtrl-v0",
+#     entry_point="%s:PandaPushEnv" % __name__,
+#     model_file="franka_heavybox.xml",
+#     controller=JointPositionController,
+#     controller_kwargs = {"clip_acceleration": False},
+#     action_interpolator=LinearInterpolator,
+#     action_repeat_kwargs={"start_value": env_field("joint_pos")},
+#     model_args = {"actuator_type": "torque",
+#                   "with_goal": True,
+#                   "finger_type": "3dprinted",
+#                   "reduce_damping": True,
+#                   "limit_ctrl": False,
+#                   "limit_force": False},
+#     max_episode_steps=500,
+#     env_kwargs = {"command_type": "new_pos",
+#                   "limit_power": 4,
+#                   "contact_penalties": True,
+#                   "goal_low": push_goal_low,
+#                   "goal_high": push_goal_high}
+# )
 
 ## And envs for training
 fixed_push_goal_a = np.array([0.75, 0.0])
@@ -1657,18 +891,24 @@ register_panda_env(
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
-            "start_vel": env_field("joint_vel"),
-            "dt": env_field("sim_dt")},
-        model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted", "reduce_damping": True,
-            "limit_ctrl": False, "limit_force": False,
-            "init_joint_pos": puck_start_jpos},
+        action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                            "start_vel": env_field("joint_vel"),
+                            "dt": env_field("sim_dt")},
+        model_args = {"actuator_type": "torque",
+                      "with_goal": True,
+                      "finger_type": "3dprinted",
+                      "reduce_damping": True,
+                      "limit_ctrl": False,
+                      "limit_force": False,
+                      "init_joint_pos": panda_start_jpos},
         max_episode_steps=500,
-        env_kwargs = {"command_type": "acc", "limit_power": 4,
-            "contact_penalties": True, "task_reward": "target",
-            "goal_low": fixed_push_goal_a, "goal_high": fixed_push_goal_a,
-            "init_pos_jitter": 0.,
+        env_kwargs = {"command_type": "acc",
+                      "limit_power": 4,
+                      "contact_penalties": True,
+                      "task_reward": "target",
+                      "goal_low": fixed_push_goal_a,
+                      "goal_high": fixed_push_goal_a,
+                      "init_pos_jitter": 0.,
             }
         )
 
@@ -1681,7 +921,7 @@ register_panda_env(
         action_interpolator=Repeater,
         model_args = {"actuator_type": "torque", "with_goal": True,
             "finger_type": "3dprinted",
-            "init_joint_pos": puck_start_jpos},
+            "init_joint_pos": panda_start_jpos},
         max_episode_steps=500,
         env_kwargs = {"command_type": "torque", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
@@ -1708,29 +948,6 @@ register_panda_env(
             }
         )
 
-register_panda_env(
-        id="PandaPushBox-ImpCtrl-GoalA-v0",
-        entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
-        controller=JointImpedanceController,
-        controller_kwargs={
-            # Values from Panda impedance control demo
-            "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-            "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-        action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
-            "start_vel": env_field("joint_vel"),
-            "dt": env_field("sim_dt")},
-        model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted",
-            "init_joint_pos": puck_start_jpos},
-        max_episode_steps=500,
-        env_kwargs = {"command_type": "acc_npc", "limit_power": 4,
-            "contact_penalties": True, "task_reward": "target",
-            "goal_low": fixed_push_goal_a, "goal_high": fixed_push_goal_a,
-            "init_pos_jitter": 0.,
-            }
-        )
 
 ### Goal B
 register_panda_env(
@@ -1740,13 +957,13 @@ register_panda_env(
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
+        action_repeat_kwargs={"start_pos": env_field("joint_pos"),
             "start_vel": env_field("joint_vel"),
             "dt": env_field("sim_dt")},
         model_args = {"actuator_type": "torque", "with_goal": True,
             "finger_type": "3dprinted", "reduce_damping": True,
             "limit_ctrl": False, "limit_force": False,
-            "init_joint_pos": puck_start_jpos},
+            "init_joint_pos": panda_start_jpos},
         max_episode_steps=500,
         env_kwargs = {"command_type": "acc", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
@@ -1764,7 +981,7 @@ register_panda_env(
         action_interpolator=Repeater,
         model_args = {"actuator_type": "torque", "with_goal": True,
             "finger_type": "3dprinted",
-            "init_joint_pos": puck_start_jpos},
+            "init_joint_pos": panda_start_jpos},
         max_episode_steps=500,
         env_kwargs = {"command_type": "torque", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
@@ -1773,29 +990,6 @@ register_panda_env(
             }
         )
 
-register_panda_env(
-        id="PandaPushBox-ImpCtrl-GoalB-v0",
-        entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
-        controller=JointImpedanceController,
-        controller_kwargs={
-            # Values from Panda impedance control demo
-            "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-            "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-        action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
-            "start_vel": env_field("joint_vel"),
-            "dt": env_field("sim_dt")},
-        model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted",
-            "init_joint_pos": puck_start_jpos},
-        max_episode_steps=500,
-        env_kwargs = {"command_type": "acc_npc", "limit_power": 4,
-            "contact_penalties": True, "task_reward": "target",
-            "goal_low": fixed_push_goal_b, "goal_high": fixed_push_goal_b,
-            "init_pos_jitter": 0.,
-            }
-        )
 
 ### Goal C
 register_panda_env(
@@ -1805,13 +999,13 @@ register_panda_env(
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
+        action_repeat_kwargs={"start_pos": env_field("joint_pos"),
             "start_vel": env_field("joint_vel"),
             "dt": env_field("sim_dt")},
         model_args = {"actuator_type": "torque", "with_goal": True,
             "finger_type": "3dprinted", "reduce_damping": True,
             "limit_ctrl": False, "limit_force": False,
-            "init_joint_pos": puck_start_jpos},
+            "init_joint_pos": panda_start_jpos},
         max_episode_steps=500,
         env_kwargs = {"command_type": "acc", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
@@ -1820,29 +1014,6 @@ register_panda_env(
             }
         )
 
-register_panda_env(
-        id="PandaPushBox-ImpCtrl-GoalC-v0",
-        entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
-        controller=JointImpedanceController,
-        controller_kwargs={
-            # Values from Panda impedance control demo
-            "kp": np.array([600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]),
-            "kd": np.array([50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0])},
-        action_interpolator=QuadraticInterpolator,
-        action_repeat_args={"start_pos": env_field("joint_pos"),
-            "start_vel": env_field("joint_vel"),
-            "dt": env_field("sim_dt")},
-        model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted",
-            "init_joint_pos": puck_start_jpos},
-        max_episode_steps=500,
-        env_kwargs = {"command_type": "acc_npc", "limit_power": 4,
-            "contact_penalties": True, "task_reward": "target",
-            "goal_low": fixed_push_goal_c, "goal_high": fixed_push_goal_c,
-            "init_pos_jitter": 0.,
-            }
-        )
 
 
 # New envs, v2 or whatever
@@ -1863,13 +1034,13 @@ for goal in ["A", "B", "C", "D", "E"]:
                     controller=JointPositionController,
                     controller_kwargs = {"clip_acceleration": False},
                     action_interpolator=QuadraticInterpolator,
-                    action_repeat_args={"start_pos": env_field("joint_pos"),
+                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
                         "start_vel": env_field("joint_vel"),
                         "dt": env_field("sim_dt")},
                     model_args = {"actuator_type": "torque", "with_goal": True,
                         "finger_type": "3dprinted", "reduce_damping": True,
                         "limit_ctrl": False, "limit_force": False,
-                        "init_joint_pos": puck_start_jpos},
+                        "init_joint_pos": panda_start_jpos},
                     max_episode_steps=500,
                     env_kwargs = {"command_type": "acc", "limit_power": 4,
                         "contact_penalties": True, "task_reward": "target",
@@ -1886,13 +1057,13 @@ for goal in ["A", "B", "C", "D", "E"]:
                     controller=JointPositionController,
                     controller_kwargs = {"clip_acceleration": False},
                     action_interpolator=QuadraticInterpolator,
-                    action_repeat_args={"start_pos": env_field("joint_pos"),
+                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
                         "start_vel": env_field("joint_vel"),
                         "dt": env_field("sim_dt")},
                     model_args = {"actuator_type": "torque", "with_goal": True,
                         "finger_type": "3dprinted", "reduce_damping": True,
                         "limit_ctrl": False, "limit_force": False,
-                        "init_joint_pos": puck_start_jpos},
+                        "init_joint_pos": panda_start_jpos},
                     max_episode_steps=500,
                     env_kwargs = {"command_type": "acc", "limit_power": 4,
                         "contact_penalties": False, "task_reward": "target",

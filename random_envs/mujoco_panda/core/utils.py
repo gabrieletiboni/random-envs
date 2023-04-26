@@ -139,7 +139,7 @@ def get_dim(param):
 
 
 def register_panda_env(id, entry_point, model_file, controller, action_interpolator,
-                       action_repeat_args={}, model_args={}, env_kwargs={},
+                       action_repeat_kwargs={}, model_args={}, env_kwargs={},
                        render_camera="side_camera", controller_kwargs={},
                        **kwargs):
     """
@@ -156,7 +156,7 @@ def register_panda_env(id, entry_point, model_file, controller, action_interpola
              kwargs={"model_file": model_file,
                      "controller": controller,
                      "action_interpolator": action_interpolator,
-                     "repeat_kwargs": action_repeat_args,
+                     "action_repeat_kwargs": action_repeat_kwargs,
                      "model_kwargs": model_args,
                      "controller_kwargs": controller_kwargs,
                      "render_camera": render_camera,
