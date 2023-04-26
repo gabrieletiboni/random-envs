@@ -3,11 +3,11 @@
 
 <!-- If the default values are changed, the corresponding get_default_task() method has to be changed accordingly -->
 {% set with_goal=with_goal | default(False) %}
-{% set puck_com=puck_com | default("0.0 0.0 0.0") %}
+{% set box_com=box_com | default("0.0 0.0 0.0") %}
 {% set box_mass=box_mass | default(0.8) %}
 {% set box_inertia=box_inertia | default("0.00075 0.00075 0.00075") %}
 
-{% set box_size=box_size|default([0.048, 0.04475, 0.0355]) %}
+{% set box_size=box_size|default([0.05, 0.05, 0.04]) %}
 {% set box_xy=box_xy | default("0.6 0.0") %}
 
 {% block assets %}
@@ -30,18 +30,18 @@
 
 {% block worldbody %}
     {{ super() }}
-    <body name="hockey_puck" pos="{{ box_xy }} {{ table_height + table_thickness/2 + box_size[2] + 0.001}}">
-        <geom name="hockey_puck" condim="6" type="box" size="{{box_size|join(" ")}}" material="checker_material" />
-        <inertial diaginertia="{{ utils.box_inertia(box_size[0]*2, box_size[1]*2, box_size[2]*2, box_mass) }}" mass="{{ box_mass }}" pos="{{ puck_com }}" />
-        <site name="com_pos" pos="{{ puck_com }}" size="0.02" material="red_target" />
+    <body name="box" pos="{{ box_xy }} {{ table_height + table_thickness/2 + box_size[2] + 0.001}}">
+        <geom name="box" condim="6" type="box" size="{{box_size|join(" ")}}" material="checker_material" />
+        <inertial diaginertia="{{ utils.box_inertia(box_size[0]*2, box_size[1]*2, box_size[2]*2, box_mass) }}" mass="{{ box_mass }}" pos="{{ box_com }}" />
+        <site name="com_pos" pos="{{ box_com }}" size="0.01" type="sphere" material="red_target" />
         <joint limited="false" name="puck_joint" type="free" />
     </body>
 {% endblock %}
 
 {% block contact %}
     {{ super() }}
-    <pair class="box-table" geom1="table" geom2="hockey_puck" />
-    <pair class="box-finger" geom1="panda0_finger1" geom2="hockey_puck" />
-    <pair class="box-finger" geom1="panda0_finger2" geom2="hockey_puck" />
+    <pair class="box-table" geom1="table" geom2="box" />
+    <pair class="box-finger" geom1="panda0_finger1" geom2="box" />
+    <pair class="box-finger" geom1="panda0_finger2" geom2="box" />
 {% endblock %}
 

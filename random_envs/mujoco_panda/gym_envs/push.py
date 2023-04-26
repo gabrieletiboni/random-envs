@@ -57,20 +57,21 @@ class PandaPushEnv(PandaGymEnvironment):
         self.rotation_in_obs = rotation_in_obs
 
         self.task_reward = task_reward
-        self.contact_penalties_enabled = contact_penalties
-        self.control_penalty_coeff = control_penalty_coeff
-        self.last_dist_from_target = 0
+        self.control_penalty_coeff = control_penalty_coeff  # penalize pos, vel and acc when they are close to the limits
+        self.last_dist_from_target = 0  # delta_distance appended to info dict
 
-        self.contact_penalties = [("hockey_puck", "table", 1e2),
-                                ("panda0_finger1", "hockey_puck", 1e2),
-                                ("panda0_finger2", "hockey_puck", 1e2),
+        self.contact_penalties_enabled = contact_penalties  # penalize contact-pairs proportional to penetration distance
+        self.contact_penalties = [("box", "table", 1e2),
+                                ("panda0_finger1", "box", 1e2),
+                                ("panda0_finger2", "box", 1e2),
                                 ("panda0_finger1", "table", 3e7),
                                 ("panda0_finger2", "table", 3e7)]
-
         self.contact_penalties = [(self.sim.model.geom_name2id(c[0]),
-                                     self.sim.model.geom_name2id(c[1]),
-                                     c[0], c[1], c[2])
-                                     for c in self.contact_penalties]
+                                   self.sim.model.geom_name2id(c[1]),
+                                   c[0],
+                                   c[1],
+                                   c[2])
+                                        for c in self.contact_penalties]
 
         # DROPO-specific parameters
         self.dropo_mode = False
@@ -97,15 +98,15 @@ class PandaPushEnv(PandaGymEnvironment):
         :returns: A dictionary with the keys of the form ``c_name1-name2`` with
             values corresponding to their contact depths scaled by the penalty.
         """
-        contact_values = [0] * len(self.contact_penalties)
+        contact_values = [0] * len(self.contact_penalties)  # initialize contact penalities to zero
         contacts = self.sim.data.contact
         for c in contacts:
             geom1 = c.geom1
             geom2 = c.geom2
             for i, (id1, id2, name1, name2, coeff) in \
                     enumerate(self.contact_penalties):
-                if id1 == geom1 and id2 == geom2 or id1 == geom2 and id2 == geom1:
-                    contact_values[i] += coeff * c.dist**2
+                if id1 == geom1 and id2 == geom2 or id1 == geom2 and id2 == geom1:  # check whether you want to penalize this pair
+                    contact_values[i] += coeff * c.dist**2  # c.dist = penetration distance
                     break
         res = {f"c_{self.contact_penalties[i][2]}-{self.contact_penalties[i][3]}": cv \
                 for i, cv in enumerate(contact_values)}
@@ -202,7 +203,7 @@ class PandaPushEnv(PandaGymEnvironment):
             (-10, 10) to prevent training instabilities in case the
             simulation gets unstable.
         """
-        value = self.sim.data.get_geom_xvelr("hockey_puck")
+        value = self.sim.data.get_geom_xvelr("box")
         value = np.clip(value, -10, 10)
         return value
 
@@ -219,7 +220,7 @@ class PandaPushEnv(PandaGymEnvironment):
             (-10, 10) to prevent training instabilities in case
             the simulation gets unstable.
         """
-        value = self.sim.data.get_geom_xvelp("hockey_puck")
+        value = self.sim.data.get_geom_xvelp("box")
         value = np.clip(value, -10, 10)
         return value
 
@@ -240,7 +241,7 @@ class PandaPushEnv(PandaGymEnvironment):
             to prevent training instabilities in case the simulation gets
             unstable.
         """
-        value = self.sim.data.get_geom_xpos("hockey_puck")
+        value = self.sim.data.get_geom_xpos("box")
         value = np.clip(value, -10, 10)
         return value
 
@@ -332,7 +333,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
 
     def get_puck_friction(self):
-        return self.get_pair_friction("hockey_puck", "table")
+        return self.get_pair_friction("box", "table")
 
     @randomization_setter("friction")
     def set_puck_friction(self, value):
@@ -343,7 +344,7 @@ class PandaPushEnv(PandaGymEnvironment):
             torsional and rotational friction values as well)
         :raises ValueError: if the dim of ``value`` is other than 2 or 5
         """
-        pair_fric = self.get_pair_friction("hockey_puck", "table")
+        pair_fric = self.get_pair_friction("box", "table")
         if value.shape[0] == 2:
             # Only set linear friction
             pair_fric[:2] = value
@@ -354,10 +355,10 @@ class PandaPushEnv(PandaGymEnvironment):
             # Set all 5 friction components
             pair_fric[:] = value
         else:
-            raise ValueError("Friction should be a vector or 2 or 5 elements.")
+            raise ValueError("Friction should be a vector of 2 or 5 elements.")
 
-    @randomization_setter("puck_com")
-    def set_puck_com(self, value):
+    @randomization_setter("box_com")
+    def set_box_com(self, value):
         """
         :description: Sets the center of mass of the hockey puck
         :param mass: The new CoM position
@@ -366,20 +367,20 @@ class PandaPushEnv(PandaGymEnvironment):
             # Set com along z-axis 0.0 (center)
             value = [value[0], value[1], 0.0]
 
-        # self.model_args["puck_com"] = list(value)
-        self.model_args["puck_com"] = " ".join([str(elem) for elem in value])
+        # self.model_args["box_com"] = list(value)
+        self.model_args["box_com"] = " ".join([str(elem) for elem in value])
         self._needs_rebuilding = True
 
     @randomization_setter("puck_mass")
-    def set_puck_mass(self, new_mass):
+    def set_box_mass(self, new_mass):
         """
         :description: Sets the mass of the hockey puck
         :param mass: The new mass (float)
         """
-        puck_mass, puck_inertia = self.get_body_mass_inertia("hockey_puck")
+        puck_mass, puck_inertia = self.get_body_mass_inertia("box")
         puck_inertia_base = puck_inertia/puck_mass
         new_inertia = puck_inertia_base * new_mass
-        self.set_body_mass_inertia("hockey_puck", new_mass, new_inertia)
+        self.set_body_mass_inertia("box", new_mass, new_inertia)
 
     def get_mjstate(self, state):
         mjstate = super().get_mjstate(state)
@@ -516,7 +517,7 @@ class PandaPushEnv(PandaGymEnvironment):
     # def get_task(self, _=None):
     #     friction = np.array(self.get_puck_friction()) # 5 dims (2 tangential, 1 torsional, 2 rolling )
     #     mass = np.array(self.get_puck_mass()) # 1 dim, mass of the puck
-    #     puck_com = np.array(self.get_puck_com()) # 2 dim
+    #     box_com = np.array(self.get_box_com()) # 2 dim
     #     # solref = np.array(self.get_puck_solref()) # 2 dims
     #     # dampings = np.array(self.get_joint_dampings()) # 7 dims
     #     # kp = np.array(self.get_contr_kp())
@@ -529,9 +530,9 @@ class PandaPushEnv(PandaGymEnvironment):
     #     if self.dyn_type == 'mft': # mass friction+torsional friction
     #         task = np.concatenate((mass, friction[:3]))
     #     elif self.dyn_type == 'mfcom': # mass friction com
-    #         task = np.concatenate((mass, friction[:2], puck_com[:2]))
+    #         task = np.concatenate((mass, friction[:2], box_com[:2]))
     #     elif self.dyn_type == 'mftcom': # mass friction+torsional com
-    #         task = np.concatenate((mass, friction[:3], puck_com[:2]))
+    #         task = np.concatenate((mass, friction[:3], box_com[:2]))
     #     else:
     #         raise NotImplementedError(f"Current randomization type is not implemented (2): {self.dyn_type}")
     #     return task
@@ -550,34 +551,34 @@ class PandaPushEnv(PandaGymEnvironment):
         self._gtask = task
 
         if self.dyn_type == 'mf':
-            self.set_puck_mass(self,task[0])
+            self.set_box_mass(self,task[0])
             self.set_puck_friction(self, task[1:3])
         elif self.dyn_type == 'mft':
-            self.set_puck_mass(self, task[0])
+            self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:4])
         elif self.dyn_type == 'mfcom':
-            self.set_puck_com(self, task[3:5])
+            self.set_box_com(self, task[3:5])
             if self._needs_rebuilding:
                 self._rebuild_model(self)
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
 
-            self.set_puck_mass(self, task[0])
+            self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:3])
         elif self.dyn_type == 'mftcom':
-            self.set_puck_com(self, task[4:6])
+            self.set_box_com(self, task[4:6])
             if self._needs_rebuilding:
                 self._rebuild_model(self)
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
 
-            self.set_puck_mass(self, task[0])
+            self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:4])
         elif self.dyn_type == 'mfcomd':
-            self.set_puck_com(self, task[3:5])
+            self.set_box_com(self, task[3:5])
             if self._needs_rebuilding:
                 self._rebuild_model(self)
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
 
-            self.set_puck_mass(self, task[0])
+            self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:3])
             self.set_joint_dampings(task[5:12])
         elif self.dyn_type == 'd':
@@ -1429,7 +1430,7 @@ class PandaPushEnv(PandaGymEnvironment):
 # slide_goal_high = np.array([1.2, 0.3])
 
 # # This has a shifted center of mass
-# offcenter_slide_dynamics = {"puck_com": (np.array([0.0, 0.02, 0]), np.array([0.0, 0.02, 0])),
+# offcenter_slide_dynamics = {"box_com": (np.array([0.0, 0.02, 0]), np.array([0.0, 0.02, 0])),
 #                             "_rebuild_model": None,
 #                             "friction": (np.array([.02, .02]), np.array([.02, .02]))}
 
