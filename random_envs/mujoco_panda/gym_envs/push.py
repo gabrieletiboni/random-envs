@@ -116,6 +116,8 @@ class PandaPushEnv(PandaGymEnvironment):
 
         self.reward_threshold = 10000
 
+        self.wandb_extra_metrics = {'last_dist_from_target': 'box_goal_distance'}
+
         # dropo-specific state space
         self.dropo_mode = False
 
