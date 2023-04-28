@@ -1,3 +1,4 @@
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from copy import deepcopy
 import csv
 import pdb
@@ -43,7 +44,8 @@ class PandaPushEnv(PandaGymEnvironment):
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
                  rotation_in_obs="none",
-                 control_penalty_coeff=3):
+                 control_penalty_coeff=3,
+                 randomized_dynamics='mf'):
         self.goal_low = goal_low
         self.goal_high = goal_high
         self.init_box_low = init_box_low
@@ -97,17 +99,12 @@ class PandaPushEnv(PandaGymEnvironment):
                                    c[2])
                                         for c in self.contact_penalties]
 
-        # dropo-specific state space
-        self.dropo_mode = False
-
-        # # Default dynamics to be randomized
-        # self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
-        # self.dyn_type = 'mf'
-
+        # Set randomized dynamics
         self.dyn_ind_to_name = {}
-        self.dyn_type = None
+        self.dyn_type = randomized_dynamics
+        self.set_random_dynamics_type(dyn_type=randomized_dynamics)
 
-        self._gtask = np.array(self.get_default_task())
+        self._current_task = np.array(self.get_default_task())
 
         self.original_task = np.copy(self.get_task())
         self.nominal_values = np.copy(self.original_task)
@@ -116,9 +113,12 @@ class PandaPushEnv(PandaGymEnvironment):
         self.max_task = np.zeros(self.task_dim)
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
-        self.sampling = None
 
         self.reward_threshold = 10000
+
+
+        # dropo-specific state space
+        self.dropo_mode = False
 
     def get_contacts(self):
         """
@@ -303,11 +303,6 @@ class PandaPushEnv(PandaGymEnvironment):
             return np.concatenate([super().get_observation(), self.puck_pos[:3],
                                    self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
 
-    ### Deprecated
-    # def get_dropo_observation(self):
-    #         return np.concatenate([super().get_observation(), self.puck_pos[:3],
-    #                                self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
-
     def set_dropo_mode(self):
         self.dropo_mode = True
 
@@ -382,14 +377,20 @@ class PandaPushEnv(PandaGymEnvironment):
             raise ValueError("Friction should be a vector of 2 or 5 elements.")
 
     @randomization_setter("box_com")
-    def set_box_com(self, value):
+    def set_box_com(self, value: List[float]):
+        """Sets the center of mass of the hockey puck
+            :param value: x,y,z list of new CoM offset w.r.t.
+                          to geometric center
+                          Value can also be [x,y] o [y].
         """
-        :description: Sets the center of mass of the hockey puck
-        :param mass: The new CoM position
-        """
+        assert isinstace(value, list)
+
         if len(value) == 2:
-            # Set com along z-axis 0.0 (center)
+            # Set com along z-axis to 0.0 (center)
             value = [value[0], value[1], 0.0]
+        elif len(value) == 1:
+            # Set comx = comz = 0.0, value is comy
+            value = [0.0, value[0], 0.0]
 
         # self.model_args["box_com"] = list(value)
         self.model_args["box_com"] = " ".join([str(elem) for elem in value])
@@ -405,6 +406,193 @@ class PandaPushEnv(PandaGymEnvironment):
         puck_inertia_base = puck_inertia/puck_mass
         new_inertia = puck_inertia_base * new_mass
         self.set_body_mass_inertia("box", new_mass, new_inertia)
+
+    def set_joint_dampings(self, dampings):
+        self.sim.model.dof_damping[:7] = dampings[:]
+
+    def get_task(self):
+        return self._current_task
+
+    def set_task(self, *task):
+        if len(task) != len(self.dyn_ind_to_name.values()):
+            raise ValueError(f"The task given is not compatible with the dyn type selected. dyn_type:{self.dyn_type} - task:{task}")
+        
+        task = np.array(task)
+        self._current_task = task
+
+        if self.dyn_type == 'mf':
+            self.set_box_mass(self,task[0])
+            self.set_puck_friction(self, task[1:3])
+
+        elif self.dyn_type == 'mft':
+            self.set_box_mass(self, task[0])
+            self.set_puck_friction(self, task[1:4])
+
+        elif self.dyn_type == 'mfcom':
+            self.set_box_com(self, task[3:5])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(self, task[0])
+            self.set_puck_friction(self, task[1:3])
+
+        elif self.dyn_type == 'com':
+            self.set_box_com(self, task[:])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+
+        elif self.dyn_type == 'comy':
+            self.set_box_com(self, task[:])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+
+        elif self.dyn_type == 'mftcom':
+            self.set_box_com(self, task[4:6])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(self, task[0])
+            self.set_puck_friction(self, task[1:4])
+
+        elif self.dyn_type == 'mfcomd':
+            self.set_box_com(self, task[3:5])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(self, task[0])
+            self.set_puck_friction(self, task[1:3])
+            self.set_joint_dampings(task[5:12])
+
+        elif self.dyn_type == 'd':
+            self.set_joint_dampings(task[:7])
+
+        else:
+            raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
+
+        return
+
+
+    def set_random_dynamics_type(self, dyn_type='mf'):
+        """Selects which dynamics to be randomized
+        with the corresponding name encoding
+        """
+        if dyn_type == 'mf':  # mass + friction
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
+        elif dyn_type == 'mft':  # mass + friction + torsional friction
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
+        elif dyn_type == 'mfcom':  # mass + friction + CoM
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comx', 4: 'comy'}
+        elif dyn_type == 'com':  # CoM
+            self.dyn_ind_to_name = {0: 'comx', 1: 'comy'}
+        elif dyn_type == 'comy':  # CoM
+            self.dyn_ind_to_name = {0: 'comy'}
+        elif dyn_type == 'mftcom':  # mass + friction + torsional + CoM
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont', 4: 'comx', 5: 'comy'}
+        elif dyn_type == 'mfcomd':  # + joint dampings
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comx', 4: 'comy', 5: 'damping0', 6: 'damping1', 7: 'damping2', 8: 'damping3', 9: 'damping4', 10: 'damping5', 11: 'damping6'}
+        elif dyn_type == 'd':  # joint dampings
+            self.dyn_ind_to_name = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6'}
+        else:
+            raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
+
+        self.dyn_type = dyn_type
+
+        self._current_task = np.array(self.get_default_task())
+
+        self.original_task = np.copy(self.get_task())
+        self.task_dim = self.get_task().shape[0]
+        self.min_task = np.zeros(self.task_dim)
+        self.max_task = np.zeros(self.task_dim)
+        self.mean_task = np.zeros(self.task_dim)
+        self.stdev_task = np.zeros(self.task_dim)
+        return
+
+
+    def get_task_lower_bound(self, index):
+        """Returns lowest possible feasible value for each dynamics"""
+        lowest_value = {
+                    'mass': 0.02, # 20gr
+                    'frictionx': 0.1,
+                    'frictiony': 0.1,
+                    'frictiont': 0.001,
+                    'comx': -0.045,
+                    'comy': -0.040,
+                    'damping0': 0,
+                    'damping1': 0,
+                    'damping2': 0,
+                    'damping3': 0,
+                    'damping4': 0,
+                    'damping5': 0,
+                    'damping6': 0
+        }
+        return lowest_value[self.dyn_ind_to_name[index]]
+
+
+    def get_task_upper_bound(self, index):
+        """Returns highest possible feasible value for each dynamics"""
+        highest_value = {
+                    'mass': 2.0, # 20gr
+                    'frictionx': 3.,
+                    'frictiony': 3.,
+                    'frictiont': 1,
+                    'comx': 0.045,
+                    'comy': 0.040,
+                    'damping0': 5000,
+                    'damping1': 5000,
+                    'damping2': 5000,
+                    'damping3': 5000,
+                    'damping4': 5000,
+                    'damping5': 5000,
+                    'damping6': 5000
+        }
+        return highest_value[self.dyn_ind_to_name[index]]
+
+
+    def get_default_task(self):
+        default_values = {
+            'mass': 0.8,
+            'frictionx': 0.8,
+            'frictiony': 0.8,
+            'frictiont': 0.01,
+            'comx': 0.0,
+            'comy': 0.0,
+            'damping0': 100,
+            'damping1': 100,
+            'damping2': 100,
+            'damping3': 100,
+            'damping4': 100,
+            'damping5': 10,
+            'damping6': 0.4
+        }
+
+        default_task = [default_values[dyn] for dyn in self.dyn_ind_to_name.values()]
+        return default_task
+
+    
+    def get_search_bounds_mean(self, index):
+        """Get search bounds for the MEAN of the parameters optimized,
+        the variance search bounds is set accordingly
+        """
+        search_bounds_mean = {
+               'mass': (0.08, 2.0),
+               'frictionx': (0.2, 2.0),
+               'frictiony': (0.2, 2.0),
+               'frictiont': (0.001, 0.5),
+               'solref0': (0.001, 0.02),
+               'solref1': (0.4, 1.),
+               'comx': (-0.032, 0.032),
+               'comy': (-0.032, 0.032),
+               'damping0': (0,4000),
+               'damping1': (0,4000),
+               'damping2': (0,4000),
+               'damping3': (0,4000),
+               'damping4': (0,4000),
+               'damping5': (0,2000),
+               'damping6': (0, 200)
+        }
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     ### DROPO-specific method
     def get_mjstate(self, state):
@@ -510,175 +698,6 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return mjstate
 
-    def set_joint_dampings(self, dampings):
-        self.sim.model.dof_damping[:7] = dampings[:]
-
-    def get_task(self):
-        return self._gtask
-
-    def set_task(self, *task):
-        if len(task) != len(self.dyn_ind_to_name.values()):
-            raise ValueError(f"The task given is not compatible with the dyn type selected. dyn_type:{self.dyn_type} - task:{task}")
-        
-        task = np.array(task)
-        self._gtask = task
-
-        if self.dyn_type == 'mf':
-            self.set_box_mass(self,task[0])
-            self.set_puck_friction(self, task[1:3])
-        elif self.dyn_type == 'mft':
-            self.set_box_mass(self, task[0])
-            self.set_puck_friction(self, task[1:4])
-        elif self.dyn_type == 'mfcom':
-            self.set_box_com(self, task[3:5])
-            if self._needs_rebuilding:
-                self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
-
-            self.set_box_mass(self, task[0])
-            self.set_puck_friction(self, task[1:3])
-        elif self.dyn_type == 'mftcom':
-            self.set_box_com(self, task[4:6])
-            if self._needs_rebuilding:
-                self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
-
-            self.set_box_mass(self, task[0])
-            self.set_puck_friction(self, task[1:4])
-        elif self.dyn_type == 'mfcomd':
-            self.set_box_com(self, task[3:5])
-            if self._needs_rebuilding:
-                self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
-
-            self.set_box_mass(self, task[0])
-            self.set_puck_friction(self, task[1:3])
-            self.set_joint_dampings(task[5:12])
-        elif self.dyn_type == 'd':
-            self.set_joint_dampings(task[:7])
-        else:
-            raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
-
-        return
-
-
-    def set_random_dynamics_type(self, dyn_type='mf'):
-        """Selects which dynamics to be randomized
-        with the corresponding name encoding
-        """
-        if dyn_type == 'mf':  # mass + friction
-            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
-        elif dyn_type == 'mft':  # mass + friction + torsional friction
-            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
-        elif dyn_type == 'mfcom':  # mass + friction + com
-            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1'}
-        elif dyn_type == 'mftcom':  # mass + friction + torsional + com
-            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont', 4: 'com0', 5: 'com1'}
-        elif dyn_type == 'mfcomd':  # + joint dampings
-            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1', 5: 'damping0', 6: 'damping1', 7: 'damping2', 8: 'damping3', 9: 'damping4', 10: 'damping5', 11: 'damping6'}
-        elif dyn_type == 'd':  # joint dampings
-            self.dyn_ind_to_name = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6'}
-        else:
-            raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
-
-        self.dyn_type = dyn_type
-
-        self._gtask = np.array(self.get_default_task())
-
-        self.original_task = np.copy(self.get_task())
-        self.task_dim = self.get_task().shape[0]
-        self.min_task = np.zeros(self.task_dim)
-        self.max_task = np.zeros(self.task_dim)
-        self.mean_task = np.zeros(self.task_dim)
-        self.stdev_task = np.zeros(self.task_dim)
-        return
-
-
-    def get_task_lower_bound(self, index):
-        """Returns lowest possible feasible value for each dynamics"""
-        lowest_value = {
-                    'mass': 0.02, # 20gr
-                    'frictionx': 0.1,
-                    'frictiony': 0.1,
-                    'frictiont': 0.001,
-                    'com0': -0.045,
-                    'com1': -0.040,
-                    'damping0': 0,
-                    'damping1': 0,
-                    'damping2': 0,
-                    'damping3': 0,
-                    'damping4': 0,
-                    'damping5': 0,
-                    'damping6': 0
-        }
-        return lowest_value[self.dyn_ind_to_name[index]]
-
-
-    def get_task_upper_bound(self, index):
-        """Returns highest possible feasible value for each dynamics"""
-        highest_value = {
-                    'mass': 2.0, # 20gr
-                    'frictionx': 3.,
-                    'frictiony': 3.,
-                    'frictiont': 1,
-                    'com0': 0.045,
-                    'com1': 0.040,
-                    'damping0': 5000,
-                    'damping1': 5000,
-                    'damping2': 5000,
-                    'damping3': 5000,
-                    'damping4': 5000,
-                    'damping5': 5000,
-                    'damping6': 5000
-        }
-        return highest_value[self.dyn_ind_to_name[index]]
-
-
-    def get_default_task(self):
-        default_values = {
-            'mass': 0.8,
-            'frictionx': 0.8,
-            'frictiony': 0.8,
-            'frictiont': 0.01,
-            'com0': 0.0,
-            'com1': 0.0,
-            'damping0': 100,
-            'damping1': 100,
-            'damping2': 100,
-            'damping3': 100,
-            'damping4': 100,
-            'damping5': 10,
-            'damping6': 0.4
-        }
-
-        default_task = [default_values[dyn] for dyn in self.dyn_ind_to_name.values()]
-        return default_task
-
-    
-    def get_search_bounds_mean(self, index):
-        """Get search bounds for the MEAN of the parameters optimized,
-        the variance search bounds is set accordingly
-        """
-        search_bounds_mean = {
-               'mass': (0.08, 2.0),
-               'frictionx': (0.2, 2.0),
-               'frictiony': (0.2, 2.0),
-               'frictiont': (0.001, 0.5),
-               'solref0': (0.001, 0.02),
-               'solref1': (0.4, 1.),
-               'com0': (-0.032, 0.032),
-               'com1': (-0.032, 0.032),
-               'damping0': (0,4000),
-               'damping1': (0,4000),
-               'damping2': (0,4000),
-               'damping3': (0,4000),
-               'damping4': (0,4000),
-               'damping5': (0,2000),
-               'damping6': (0, 200)
-        }
-        return search_bounds_mean[self.dyn_ind_to_name[index]]
-
-
 
 
 """
@@ -734,6 +753,38 @@ register_panda_env(
                       "init_jpos_jitter": 0.,
             }
         )
+
+randomized_dynamics = ['mf', 'mft', 'mfcom', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
+for dyn_type in randomized_dynamics:
+    register_panda_env(
+            id=f"PandaPush-PosCtrl-GoalA-{dyn_type}-v0",
+            entry_point="%s:PandaPushEnv" % __name__,
+            model_file="franka_box.xml",
+            controller=JointPositionController,
+            controller_kwargs = {"clip_acceleration": False},
+            action_interpolator=QuadraticInterpolator,
+            action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                                "start_vel": env_field("joint_vel"),
+                                "dt": env_field("sim_dt")},
+            model_args = {"actuator_type": "torque",
+                          "with_goal": True,
+                          "finger_type": "3dprinted",
+                          "reduce_damping": True,
+                          "limit_ctrl": False,
+                          "limit_force": False,
+                          "init_joint_pos": panda_start_jpos},
+            max_episode_steps=500,
+            env_kwargs = {"command_type": "acc",
+                          "limit_power": 4,
+                          "contact_penalties": True,
+                          "task_reward": "target",
+                          "goal_low": fixed_push_goal_a,
+                          "goal_high": fixed_push_goal_a,
+                          "init_jpos_jitter": 0.,
+                          "randomized_dynamics": dyn_type
+                }
+            )
+
 
 register_panda_env(
         id="PandaPush-TorqueCtrl-GoalA-v0",
@@ -839,61 +890,61 @@ register_panda_env(
 
 
 
-# New envs, v2 or whatever
-fixed_push_goal = {}
-fixed_push_goal["A"] = fixed_push_goal_a
-fixed_push_goal["B"] = fixed_push_goal_b
-fixed_push_goal["C"] = fixed_push_goal_c
-fixed_push_goal["D"] = fixed_push_goal_d
-fixed_push_goal["E"] = fixed_push_goal_e
+# # New envs, v2 or whatever
+# fixed_push_goal = {}
+# fixed_push_goal["A"] = fixed_push_goal_a
+# fixed_push_goal["B"] = fixed_push_goal_b
+# fixed_push_goal["C"] = fixed_push_goal_c
+# fixed_push_goal["D"] = fixed_push_goal_d
+# fixed_push_goal["E"] = fixed_push_goal_e
 
-for goal in ["A", "B", "C", "D", "E"]:
-    for pen in ["0.1", "1", "3", "10", "20"]:
-        for orientation in ["none"]:
-            register_panda_env(
-                    id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-v0",
-                    entry_point="%s:PandaPushEnv" % __name__,
-                    model_file="franka_box.xml",
-                    controller=JointPositionController,
-                    controller_kwargs = {"clip_acceleration": False},
-                    action_interpolator=QuadraticInterpolator,
-                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
-                        "start_vel": env_field("joint_vel"),
-                        "dt": env_field("sim_dt")},
-                    model_args = {"actuator_type": "torque", "with_goal": True,
-                        "finger_type": "3dprinted", "reduce_damping": True,
-                        "limit_ctrl": False, "limit_force": False,
-                        "init_joint_pos": panda_start_jpos},
-                    max_episode_steps=500,
-                    env_kwargs = {"command_type": "acc", "limit_power": 4,
-                        "contact_penalties": True, "task_reward": "target",
-                        "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
-                        "init_jpos_jitter": 0., "rotation_in_obs": orientation,
-                        "control_penalty_coeff": float(pen),
-                        }
-                    )
+# for goal in ["A", "B", "C", "D", "E"]:
+#     for pen in ["0.1", "1", "3", "10", "20"]:
+#         for orientation in ["none"]:
+#             register_panda_env(
+#                     id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-v0",
+#                     entry_point="%s:PandaPushEnv" % __name__,
+#                     model_file="franka_box.xml",
+#                     controller=JointPositionController,
+#                     controller_kwargs = {"clip_acceleration": False},
+#                     action_interpolator=QuadraticInterpolator,
+#                     action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+#                         "start_vel": env_field("joint_vel"),
+#                         "dt": env_field("sim_dt")},
+#                     model_args = {"actuator_type": "torque", "with_goal": True,
+#                         "finger_type": "3dprinted", "reduce_damping": True,
+#                         "limit_ctrl": False, "limit_force": False,
+#                         "init_joint_pos": panda_start_jpos},
+#                     max_episode_steps=500,
+#                     env_kwargs = {"command_type": "acc", "limit_power": 4,
+#                         "contact_penalties": True, "task_reward": "target",
+#                         "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
+#                         "init_jpos_jitter": 0., "rotation_in_obs": orientation,
+#                         "control_penalty_coeff": float(pen),
+#                         }
+#                     )
 
-            register_panda_env(
-                    id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-NoConPen-v0",
-                    entry_point="%s:PandaPushEnv" % __name__,
-                    model_file="franka_box.xml",
-                    controller=JointPositionController,
-                    controller_kwargs = {"clip_acceleration": False},
-                    action_interpolator=QuadraticInterpolator,
-                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
-                        "start_vel": env_field("joint_vel"),
-                        "dt": env_field("sim_dt")},
-                    model_args = {"actuator_type": "torque", "with_goal": True,
-                        "finger_type": "3dprinted", "reduce_damping": True,
-                        "limit_ctrl": False, "limit_force": False,
-                        "init_joint_pos": panda_start_jpos},
-                    max_episode_steps=500,
-                    env_kwargs = {"command_type": "acc", "limit_power": 4,
-                        "contact_penalties": False, "task_reward": "target",
-                        "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
-                        "init_jpos_jitter": 0., "rotation_in_obs": orientation,
-                        "control_penalty_coeff": float(pen),
-                        }
-                    )
+#             register_panda_env(
+#                     id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-NoConPen-v0",
+#                     entry_point="%s:PandaPushEnv" % __name__,
+#                     model_file="franka_box.xml",
+#                     controller=JointPositionController,
+#                     controller_kwargs = {"clip_acceleration": False},
+#                     action_interpolator=QuadraticInterpolator,
+#                     action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+#                         "start_vel": env_field("joint_vel"),
+#                         "dt": env_field("sim_dt")},
+#                     model_args = {"actuator_type": "torque", "with_goal": True,
+#                         "finger_type": "3dprinted", "reduce_damping": True,
+#                         "limit_ctrl": False, "limit_force": False,
+#                         "init_joint_pos": panda_start_jpos},
+#                     max_episode_steps=500,
+#                     env_kwargs = {"command_type": "acc", "limit_power": 4,
+#                         "contact_penalties": False, "task_reward": "target",
+#                         "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
+#                         "init_jpos_jitter": 0., "rotation_in_obs": orientation,
+#                         "control_penalty_coeff": float(pen),
+#                         }
+#                     )
 
 
