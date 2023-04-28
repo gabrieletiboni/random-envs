@@ -364,7 +364,6 @@ class PandaPushEnv(PandaGymEnvironment):
         self.set_random_goal()
         start_pos = np.random.uniform(self.init_box_low, self.init_box_high)
         self.puck_pos = start_pos
-        self.last_dist_from_target = 0
         return self.get_observation()
 
 
