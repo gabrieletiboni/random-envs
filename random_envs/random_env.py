@@ -274,15 +274,17 @@ class RandomEnv(gym.Env):
     def get_uniform_dr_by_percentage(self,
                                      percentage: float,
                                      nominal_values: List[float] = None,
+                                     lower_bounds: List[float] = None,
                                      dyn_mask: List[int] = None):
         """Returns uniform DR distribution centered in the
         nominal values, and half-width = percentage *
-        * (nominal_values - lower_bound).
+        * (nominal_values - lower_bounds).
         nominal values should be set in between the lower and
         upper bounds, but this is not checked.
 
-            :param percentage: uniform half-width as % of (nominal - lower_bound)
+            :param percentage: uniform half-width as % of (nominal - lower_bounds)
             :param nominal_values: custom nominal values instead of default ones
+            :param lower_bounds: custom lower bounds instead of default ones
             :param dyn_mask: randomize some parameters only
         """
         assert percentage >= 0.0 and percentage <= 1.0
@@ -293,14 +295,15 @@ class RandomEnv(gym.Env):
         if dyn_mask is None:
             dyn_mask = list(range(task_dim))
         else:
-            assert np.all(np.array(dyn_mask) < task_dim) and np.all(np.array(dyn_mask) > 0)
+            assert np.all(np.array(dyn_mask) < task_dim) and np.all(np.array(dyn_mask) >= 0), f'Specify the index of the dynamics parameter to randomize, starting from 0. Number of current parameters is {task_dim}'
+        
+        if lower_bounds is None:
+            lower_bounds = np.array([self.get_search_bounds_mean(i)[0] for i in range(task_dim)])
 
         dr_percentage_per_dim = np.zeros(task_dim)
         dr_percentage_per_dim[dyn_mask] = percentage
 
-        lower_search_bound = np.array([self.get_search_bounds_mean(i)[0] for i in range(task_dim)])
-
-        deviation = np.multiply(nominal_values-lower_search_bound, dr_percentage_per_dim)  # element-wise mult: [ N nominal values ] * [ N DR percentages ]
+        deviation = np.multiply(nominal_values-lower_bounds, dr_percentage_per_dim)  # element-wise mult: [ N nominal values ] * [ N DR percentages ]
         bounds_low = nominal_values - deviation
         bounds_high = nominal_values + deviation
         bounds = np.vstack((bounds_low,bounds_high)).reshape((-1,),order='F')  # alternating bounds from the low and high bounds
