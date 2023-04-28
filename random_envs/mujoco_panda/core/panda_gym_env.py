@@ -49,13 +49,23 @@ class PandaGymEnvironment(gym.Env, Environment):
     """
     The base class for all Panda gym environments.
     """
-    def __init__(self, model_file, controller, action_interpolator, action_repeat_kwargs,
-                 model_kwargs={}, controller_kwargs={}, render_camera="side_camera",
-                 render_res=(320, 240), command_type=None,
-                 acceleration_penalty_factor=1e-1, limit_power=2,
-                 randomizations={}, init_pos_jitter=0.2):
+    def __init__(self,
+                 model_file,
+                 controller,
+                 action_interpolator,
+                 action_repeat_kwargs,
+                 model_kwargs={},
+                 controller_kwargs={},
+                 render_camera="side_camera",
+                 render_res=(320, 240),
+                 command_type=None,
+                 acceleration_penalty_factor=1e-1,
+                 limit_power=2,
+                 randomizations={},
+                 init_jpos_jitter=0.2,
+                 init_jvel_jitter=0.0):
         gym.Env.__init__(self)
-        Environment.__init__(self, model_file, init_pos_jitter=init_pos_jitter, **model_kwargs)
+        Environment.__init__(self, model_file, init_jpos_jitter=init_jpos_jitter, init_jvel_jitter=init_jvel_jitter, **model_kwargs)
         self.acceleration_penalty_factor = acceleration_penalty_factor
         self.limit_power = limit_power
         if "num" not in action_repeat_kwargs:
@@ -165,7 +175,7 @@ class PandaGymEnvironment(gym.Env, Environment):
         self._randomization_setters = {}
         self._init_setters()
         self._task = None
-        # self.set_random_task() # Handle the randomization in slide.py (temporary change by gabriele_dev)
+        # self.set_random_task() # Handle the randomization in push.py (temporary change by gabriele_dev)
 
     @property
     def robot_obs_dim(self):

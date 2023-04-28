@@ -21,23 +21,49 @@ class PandaPushEnv(PandaGymEnvironment):
     :description: The simple environment where the Panda robot is manipulating
         a box.
     """
-    def __init__(self, model_file, controller, action_interpolator, action_repeat_kwargs,
-                 model_kwargs={}, controller_kwargs={}, render_camera="side_camera",
-                 render_res=(320, 240), task_reward="guide", command_type="new_pos",
-                 acceleration_penalty_factor=1e-2, limit_power=2, contact_penalties=False,
-                 randomizations={}, goal_low=np.array([.7, -.3]), goal_high=np.array([1.2, .3]),
-                 start_low=np.array([0.51, 0]), start_high=np.array([0.51, 0.]),
-                 push_prec_alpha=1e-3, init_pos_jitter=0.2, rotation_in_obs="none",
+    def __init__(self,
+                 model_file,
+                 controller,
+                 action_interpolator,
+                 action_repeat_kwargs,
+                 model_kwargs={},
+                 controller_kwargs={},
+                 render_camera="side_camera",
+                 render_res=(320, 240),
+                 task_reward="guide",
+                 command_type="new_pos",
+                 acceleration_penalty_factor=1e-2,
+                 limit_power=2,
+                 contact_penalties=False,
+                 randomizations={},
+                 goal_low=np.array([.7, -.3]),
+                 goal_high=np.array([1.2, .3]),
+                 init_box_low=np.array([0.51, 0]),
+                 init_box_high=np.array([0.51, 0.]),
+                 push_prec_alpha=1e-3,
+                 init_jpos_jitter=0.2,
+                 init_jvel_jitter=0.0,
+                 rotation_in_obs="none",
                  control_penalty_coeff=3):
         self.goal_low = goal_low
         self.goal_high = goal_high
-        self.start_low = start_low
-        self.start_high = start_high
-        PandaGymEnvironment.__init__(self, model_file, controller, action_interpolator,
-                              action_repeat_kwargs, model_kwargs, controller_kwargs,
-                              render_camera, render_res, command_type,
-                              acceleration_penalty_factor, limit_power,
-                              randomizations, init_pos_jitter)
+        self.init_box_low = init_box_low
+        self.init_box_high = init_box_high
+        PandaGymEnvironment.__init__(self,
+                                     model_file=model_file,
+                                     controller=controller,
+                                     action_interpolator=action_interpolator,
+                                     action_repeat_kwargs=action_repeat_kwargs,
+                                     model_kwargs=model_kwargs,
+                                     controller_kwargs=controller_kwargs,
+                                     render_camera=render_camera,
+                                     render_res=render_res,
+                                     command_type=command_type,
+                                     acceleration_penalty_factor=acceleration_penalty_factor,
+                                     limit_power=limit_power,
+                                     randomizations=randomizations,
+                                     init_jpos_jitter=init_jpos_jitter,
+                                     init_jvel_jitter=init_jvel_jitter)
 
         # Override observation space, we now also have the box
         # (extra 3pos+3velp+3ori+3velr) and the goal (3pos)
@@ -76,18 +102,21 @@ class PandaPushEnv(PandaGymEnvironment):
         # DROPO-specific parameters
         self.dropo_mode = False
         # Default dynamics to be randomized
-        self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
+        self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
         self.dyn_type = 'mf'
 
         self._gtask = np.array(self.get_default_task())
 
         self.original_task = np.copy(self.get_task())
+        self.nominal_values = np.copy(self.original_task)
         self.task_dim = self.get_task().shape[0]
         self.min_task = np.zeros(self.task_dim)
         self.max_task = np.zeros(self.task_dim)
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
         self.sampling = None
+
+        self.reward_threshold = 10000
 
     def get_contacts(self):
         """
@@ -268,21 +297,14 @@ class PandaPushEnv(PandaGymEnvironment):
 
             return np.concatenate([super().get_observation(), self.puck_pos,
                                    rot, self.goal_pos])
-            #return np.concatenate([super().get_observation(), self.puck_pos,
-            #                       self.puck_velp, self.puck_orientation,
-            #                       self.puck_velr, self.goal_pos])
         else:
-            # return np.concatenate([super().get_observation(), self.puck_pos[:2],
-            #                        self.puck_velp[:2], self.puck_orientation_quat,
-            #                        self.puck_velr])
             return np.concatenate([super().get_observation(), self.puck_pos[:3],
                                    self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
 
-    def get_dropo_observation(self):
-            # return np.concatenate([super().get_observation(), self.puck_pos[:3],
-            #                        self.puck_velp[:3], self.puck_orientation_quat])
-            return np.concatenate([super().get_observation(), self.puck_pos[:3],
-                                   self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
+    ### Deprecated
+    # def get_dropo_observation(self):
+    #         return np.concatenate([super().get_observation(), self.puck_pos[:3],
+    #                                self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
 
     def set_dropo_mode(self):
         self.dropo_mode = True
@@ -326,7 +348,7 @@ class PandaPushEnv(PandaGymEnvironment):
     def reset(self):
         super().reset()
         self.set_random_goal()
-        start_pos = np.random.uniform(self.start_low, self.start_high)
+        start_pos = np.random.uniform(self.init_box_low, self.init_box_high)
         self.puck_pos = start_pos
         self.last_dist_from_target = 0
         return self.get_observation()
@@ -382,6 +404,7 @@ class PandaPushEnv(PandaGymEnvironment):
         new_inertia = puck_inertia_base * new_mass
         self.set_body_mass_inertia("box", new_mass, new_inertia)
 
+    ### DROPO-specific method
     def get_mjstate(self, state):
         mjstate = super().get_mjstate(state)
 
@@ -402,37 +425,8 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return mjstate
 
-    # # Sets jpos, jvel, puckposxy and puckvelxy
-    # def get_mjstate_posvel(self, state):
-    #     # Sets jpos and jvel
-    #     mjstate = super().get_mjstate(state)
 
-    #     # Extract all data from the state vector
-    #     puck_posxy = state[14:16]
-    #     puck_velpxy = state[16:18]
-
-    #     # Put it in mjstate at the right coords
-    #     puck_joint_id = self.sim.model.joint_name2id("puck_joint")
-    #     mjstate.qpos[puck_joint_id:puck_joint_id+2] = puck_posxy
-    #     mjstate.qvel[puck_joint_id:puck_joint_id+2] = puck_velpxy
-
-    #     return mjstate
-
-    # def set_initial_mjstateposvel(self, state):
-    #     # Sets jpos and jvel
-    #     mjstate = super().get_mjstate(state)
-
-    #     # Extract all data from the state vector
-    #     puck_posxy = state[14:16]
-    #     puck_velpxy = state[16:18]
-
-    #     # Put it in mjstate at the right coords
-    #     puck_joint_id = self.sim.model.joint_name2id("puck_joint")
-    #     mjstate.qpos[puck_joint_id:puck_joint_id+2] = puck_posxy
-    #     mjstate.qvel[puck_joint_id:puck_joint_id+2] = puck_velpxy
-
-    #     return mjstate
-
+    ### DROPO-specific method
     def get_full_mjstate(self, state, template=None):
 
         # mjstate = super().get_mjstate(state, template) # commented out for letting the arm motion replayed without resetting
@@ -461,16 +455,17 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return mjstate
 
-    def set_initial_joint_posvel(self, state, template=None):
 
+    ### DROPO-specific method
+    def set_initial_joint_posvel(self, state, template=None):
         mjstate = super().get_mjstate(state, template)
 
         return mjstate
 
-
-    # Sets position x,y + velocity x,y + orientation
+    
+    ### DROPO-specific method
     def set_initial_mjstate(self, state, template=None):
-
+        """Sets position x,y + velocity x,y + orientation"""
         mjstate = super().get_mjstate(state, template)
 
         # puck_posxy = state[14:16]
@@ -478,7 +473,6 @@ class PandaPushEnv(PandaGymEnvironment):
 
         puck_posxyz = state[14:17]
         puck_velpxyz = state[17:20]
-
 
         # Put it in mjstate at the right coords
         puck_joint_id = self.sim.model.joint_name2id("puck_joint")
@@ -544,7 +538,7 @@ class PandaPushEnv(PandaGymEnvironment):
         return self._gtask
 
     def set_task(self, *task):
-        if len(task) != len(self.dynamics_indexes.values()):
+        if len(task) != len(self.dyn_ind_to_name.values()):
             raise ValueError(f"The task given is not compatible with the dyn type selected. dyn_type:{self.dyn_type} - task:{task}")
         
         task = np.array(task)
@@ -586,26 +580,22 @@ class PandaPushEnv(PandaGymEnvironment):
         else:
             raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
 
-        # if self._needs_rebuilding:
-        #     # self.build_model(self.model_args)
-        #     self._rebuild_model(self)
-
         return
 
     # Selects which dynamics to be optimized (and randomized) with the corresponding encoded name
     def set_random_dynamics_type(self, dyn_type='mf'):
         if dyn_type == 'mf': # mass friction
-            self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
         elif dyn_type == 'mft': # mass friction+torsional friction
-            self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
         elif dyn_type == 'mfcom': # mass friction com
-            self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1'}
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1'}
         elif dyn_type == 'mftcom': # mass friction+torsional com
-            self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont', 4: 'com0', 5: 'com1'}
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont', 4: 'com0', 5: 'com1'}
         elif dyn_type == 'mfcomd': # + dampings
-            self.dynamics_indexes = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1', 5: 'damping0', 6: 'damping1', 7: 'damping2', 8: 'damping3', 9: 'damping4', 10: 'damping5', 11: 'damping6'}
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1', 5: 'damping0', 6: 'damping1', 7: 'damping2', 8: 'damping3', 9: 'damping4', 10: 'damping5', 11: 'damping6'}
         elif dyn_type == 'd': # dampings
-            self.dynamics_indexes = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6'}
+            self.dyn_ind_to_name = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6'}
         else:
             raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
 
@@ -638,7 +628,7 @@ class PandaPushEnv(PandaGymEnvironment):
                     'damping5': 0,
                     'damping6': 0
         }
-        return lowest_value[self.dynamics_indexes[index]]
+        return lowest_value[self.dyn_ind_to_name[index]]
 
     # Returns highest possible feasible value for each dynamics
     def get_task_upper_bound(self, index):
@@ -657,7 +647,7 @@ class PandaPushEnv(PandaGymEnvironment):
                     'damping5': 5000,
                     'damping6': 5000
         }
-        return highest_value[self.dynamics_indexes[index]]
+        return highest_value[self.dyn_ind_to_name[index]]
 
 
     def get_default_task(self):
@@ -677,7 +667,7 @@ class PandaPushEnv(PandaGymEnvironment):
             'damping6': 0.4
         }
 
-        default_task = [default_values[dyn] for dyn in self.dynamics_indexes.values()]
+        default_task = [default_values[dyn] for dyn in self.dyn_ind_to_name.values()]
         return default_task
 
     
@@ -700,7 +690,7 @@ class PandaPushEnv(PandaGymEnvironment):
                'damping5': (0,2000),
                'damping6': (0, 200)
        }
-       return search_bounds_mean[self.dynamics_indexes[index]]
+       return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     # Sets the task search bounds based on how they are specified in get_search_bounds_mean
     def set_task_search_bounds(self):
@@ -739,29 +729,29 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return
 
-    def set_udr_distribution(self, bounds):
-        self.sampling = 'uniform'
-        for i in range(len(bounds)//2):
-            self.min_task[i] = bounds[i*2]
-            self.max_task[i] = bounds[i*2 + 1]
-        return
+    # def set_udr_distribution(self, bounds):
+    #     self.sampling = 'uniform'
+    #     for i in range(len(bounds)//2):
+    #         self.min_task[i] = bounds[i*2]
+    #         self.max_task[i] = bounds[i*2 + 1]
+    #     return
 
-    def set_truncnorm_distribution(self, bounds):
-        if len(bounds) != len(self.dynamics_indexes.values())*2:
-            raise ValueError(f"The task given is not compatible with the dyn type selected (set_truncnorm_distribution). dyn_type:{self.dyn_type} - bounds:{bounds}")
+    # def set_truncnorm_distribution(self, bounds):
+    #     if len(bounds) != len(self.dyn_ind_to_name.values())*2:
+    #         raise ValueError(f"The task given is not compatible with the dyn type selected (set_truncnorm_distribution). dyn_type:{self.dyn_type} - bounds:{bounds}")
 
-        self.sampling = 'truncnorm'
-        for i in range(len(bounds)//2):
-            self.mean_task[i] = bounds[i*2]
-            self.stdev_task[i] = bounds[i*2 + 1]
-        return
+    #     self.sampling = 'truncnorm'
+    #     for i in range(len(bounds)//2):
+    #         self.mean_task[i] = bounds[i*2]
+    #         self.stdev_task[i] = bounds[i*2 + 1]
+    #     return
 
-    def set_gaussian_distribution(self, bounds):
-        self.sampling = 'gaussian'
-        for i in range(len(bounds)//2):
-            self.mean_task[i] = bounds[i*2]
-            self.stdev_task[i] = bounds[i*2 + 1]
-        return
+    # def set_gaussian_distribution(self, bounds):
+    #     self.sampling = 'gaussian'
+    #     for i in range(len(bounds)//2):
+    #         self.mean_task[i] = bounds[i*2]
+    #         self.stdev_task[i] = bounds[i*2 + 1]
+    #     return
 
     def set_random_task(self):
         self.set_task(*self.sample_task())
@@ -817,7 +807,7 @@ class PandaPushEnv(PandaGymEnvironment):
         return
 
     # def get_randomized_dynamics(self):
-    #     return [dyn for dyn in self.dynamics_indexes.values()]
+    #     return [dyn for dyn in self.dyn_ind_to_name.values()]
 
     # Dirty workaround to get whether current env is panda during DROPO computation
     # def this_is_panda():
@@ -851,16 +841,16 @@ class PandaPushEnv(PandaGymEnvironment):
 # push_goal_low = np.array([0.3, -0.3])
 # push_goal_high = np.array([0.6, 0.3])
 
-### Starting box distribution (see franka_heavybox on the arg name to change this)
-# push_start_low = np.array([0.4, -0.2])
-# push_start_high = np.array([0.6, 0.2])
+### Starting box distribution (see default values in class: init_box_low, init_box_high)
+# init_box_low = np.array([0.4, -0.2])
+# init_box_high = np.array([0.6, 0.2])
 
 panda_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
 
 # register_panda_env(
 #     id="PandaPushFixedStart-PosCtrl-v0",
 #     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_heavybox.xml",
+#     model_file="franka_box.xml",
 #     controller=JointPositionController,
 #     controller_kwargs = {"clip_acceleration": False},
 #     action_interpolator=LinearInterpolator,
@@ -888,9 +878,9 @@ fixed_push_goal_e = np.array([0.7, 0.05])
 
 ### Goal A
 register_panda_env(
-        id="PandaPushBox-PosCtrl-GoalA-v0",
+        id="PandaPush-PosCtrl-GoalA-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
@@ -911,14 +901,14 @@ register_panda_env(
                       "task_reward": "target",
                       "goal_low": fixed_push_goal_a,
                       "goal_high": fixed_push_goal_a,
-                      "init_pos_jitter": 0.,
+                      "init_jpos_jitter": 0.,
             }
         )
 
 register_panda_env(
-        id="PandaPushBox-TorqueCtrl-GoalA-v0",
+        id="PandaPush-TorqueCtrl-GoalA-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=TorqueController,
         controller_kwargs={"gravity_compensation": True},
         action_interpolator=Repeater,
@@ -929,14 +919,14 @@ register_panda_env(
         env_kwargs = {"command_type": "torque", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
             "goal_low": fixed_push_goal_a, "goal_high": fixed_push_goal_a,
-            "init_pos_jitter": 0.,
+            "init_jpos_jitter": 0.,
             }
         )
 
 register_panda_env(
-        id="PandaPushBox-TorqueCtrl-DropoTorques-GoalA-v0",
+        id="PandaPush-TorqueCtrl-DropoTorques-GoalA-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=TorqueController,
         controller_kwargs={"gravity_compensation": False},
         action_interpolator=Repeater,
@@ -947,16 +937,16 @@ register_panda_env(
         env_kwargs = {"command_type": "torque", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
             "goal_low": fixed_push_goal_a, "goal_high": fixed_push_goal_a,
-            "init_pos_jitter": 0.,
+            "init_jpos_jitter": 0.,
             }
         )
 
 
 ### Goal B
 register_panda_env(
-        id="PandaPushBox-PosCtrl-GoalB-v0",
+        id="PandaPush-PosCtrl-GoalB-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
@@ -971,14 +961,14 @@ register_panda_env(
         env_kwargs = {"command_type": "acc", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
             "goal_low": fixed_push_goal_b, "goal_high": fixed_push_goal_b,
-            "init_pos_jitter": 0.,
+            "init_jpos_jitter": 0.,
             }
         )
 
 register_panda_env(
-        id="PandaPushBox-TorqueCtrl-GoalB-v0",
+        id="PandaPush-TorqueCtrl-GoalB-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=TorqueController,
         controller_kwargs={"gravity_compensation": True},
         action_interpolator=Repeater,
@@ -989,16 +979,16 @@ register_panda_env(
         env_kwargs = {"command_type": "torque", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
             "goal_low": fixed_push_goal_b, "goal_high": fixed_push_goal_b,
-            "init_pos_jitter": 0.,
+            "init_jpos_jitter": 0.,
             }
         )
 
 
 ### Goal C
 register_panda_env(
-        id="PandaPushBox-PosCtrl-GoalC-v0",
+        id="PandaPush-PosCtrl-GoalC-v0",
         entry_point="%s:PandaPushEnv" % __name__,
-        model_file="franka_heavybox.xml",
+        model_file="franka_box.xml",
         controller=JointPositionController,
         controller_kwargs = {"clip_acceleration": False},
         action_interpolator=QuadraticInterpolator,
@@ -1013,7 +1003,7 @@ register_panda_env(
         env_kwargs = {"command_type": "acc", "limit_power": 4,
             "contact_penalties": True, "task_reward": "target",
             "goal_low": fixed_push_goal_c, "goal_high": fixed_push_goal_c,
-            "init_pos_jitter": 0.,
+            "init_jpos_jitter": 0.,
             }
         )
 
@@ -1031,9 +1021,9 @@ for goal in ["A", "B", "C", "D", "E"]:
     for pen in ["0.1", "1", "3", "10", "20"]:
         for orientation in ["none"]:
             register_panda_env(
-                    id=f"PandaPushBox-PosCtrl-Goal{goal}-Pen{pen}-v0",
+                    id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-v0",
                     entry_point="%s:PandaPushEnv" % __name__,
-                    model_file="franka_heavybox.xml",
+                    model_file="franka_box.xml",
                     controller=JointPositionController,
                     controller_kwargs = {"clip_acceleration": False},
                     action_interpolator=QuadraticInterpolator,
@@ -1048,15 +1038,15 @@ for goal in ["A", "B", "C", "D", "E"]:
                     env_kwargs = {"command_type": "acc", "limit_power": 4,
                         "contact_penalties": True, "task_reward": "target",
                         "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
-                        "init_pos_jitter": 0., "rotation_in_obs": orientation,
+                        "init_jpos_jitter": 0., "rotation_in_obs": orientation,
                         "control_penalty_coeff": float(pen),
                         }
                     )
 
             register_panda_env(
-                    id=f"PandaPushBox-PosCtrl-Goal{goal}-Pen{pen}-NoConPen-v0",
+                    id=f"PandaPush-PosCtrl-Goal{goal}-Pen{pen}-NoConPen-v0",
                     entry_point="%s:PandaPushEnv" % __name__,
-                    model_file="franka_heavybox.xml",
+                    model_file="franka_box.xml",
                     controller=JointPositionController,
                     controller_kwargs = {"clip_acceleration": False},
                     action_interpolator=QuadraticInterpolator,
@@ -1071,7 +1061,7 @@ for goal in ["A", "B", "C", "D", "E"]:
                     env_kwargs = {"command_type": "acc", "limit_power": 4,
                         "contact_penalties": False, "task_reward": "target",
                         "goal_low": fixed_push_goal[goal], "goal_high": fixed_push_goal[goal],
-                        "init_pos_jitter": 0., "rotation_in_obs": orientation,
+                        "init_jpos_jitter": 0., "rotation_in_obs": orientation,
                         "control_penalty_coeff": float(pen),
                         }
                     )

@@ -13,16 +13,16 @@ class Environment():
         checking joint limits, and such. In short, it acts as the interface between
         the Gym wrapper and MuJoCo.
     """
-    def __init__(self, template_file, init_pos_jitter=0.1, init_vel_jitter=0.0, **kwargs):
+    def __init__(self, template_file, init_jpos_jitter=0.1, init_jvel_jitter=0.0, **kwargs):
         """
         :description: The initializer for the Environment class.
         :param template_file: name of the high-level XML template file to render.
-        :param init_pos_jitter: the joint position after environment reset is
+        :param init_jpos_jitter: the joint position after environment reset is
             sampled from a uniform distribution; this argument sets the range
             for the initial values. This only affects joint values (qpos of
             other DoFs is not randomized). Setting this to zero will fix the
             initial position.
-        :param init_vel_jitter: same as ``init_pos_jitter``, but for the
+        :param init_jvel_jitter: same as ``init_jpos_jitter``, but for the
             initial velocity
         :param **kwargs: parameters which will be passed to the Jinja template
             for rendering
@@ -31,8 +31,8 @@ class Environment():
         self.model_args = kwargs
         self.viewer = None
 
-        self.init_pos_jitter = init_pos_jitter
-        self.init_vel_jitter = init_vel_jitter
+        self.init_jpos_jitter = init_jpos_jitter
+        self.init_jvel_jitter = init_jvel_jitter
 
         self.build_model(kwargs)
         joint_qvel_limits = np.array([2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61])
@@ -207,8 +207,8 @@ class Environment():
             distribution with ranges passed to the ``__init__`` function).
         """
         functions.mj_resetData(self.sim.model, self.sim.data)
-        pos_noise = np.random.uniform(-self.init_pos_jitter, self.init_pos_jitter, 7)
-        vel_noise = np.random.uniform(-self.init_vel_jitter, self.init_vel_jitter, 7)
+        pos_noise = np.random.uniform(-self.init_jpos_jitter, self.init_jpos_jitter, 7)
+        vel_noise = np.random.uniform(-self.init_jvel_jitter, self.init_jvel_jitter, 7)
         self.sim.data.qpos[self.arm_joint_index] += pos_noise
         self.sim.data.qvel[self.arm_joint_index] += vel_noise
         self.sim.forward()
