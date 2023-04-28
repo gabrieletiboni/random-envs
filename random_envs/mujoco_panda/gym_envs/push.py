@@ -35,7 +35,6 @@ class PandaPushEnv(PandaGymEnvironment):
                  acceleration_penalty_factor=1e-2,
                  limit_power=2,
                  contact_penalties=False,
-                 randomizations={},
                  goal_low=np.array([.7, -.3]),
                  goal_high=np.array([1.2, .3]),
                  init_box_low=np.array([0.51, 0]),
@@ -61,7 +60,6 @@ class PandaPushEnv(PandaGymEnvironment):
                                      command_type=command_type,
                                      acceleration_penalty_factor=acceleration_penalty_factor,
                                      limit_power=limit_power,
-                                     randomizations=randomizations,
                                      init_jpos_jitter=init_jpos_jitter,
                                      init_jvel_jitter=init_jvel_jitter)
 
@@ -99,11 +97,15 @@ class PandaPushEnv(PandaGymEnvironment):
                                    c[2])
                                         for c in self.contact_penalties]
 
-        # DROPO-specific parameters
+        # dropo-specific state space
         self.dropo_mode = False
-        # Default dynamics to be randomized
-        self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
-        self.dyn_type = 'mf'
+
+        # # Default dynamics to be randomized
+        # self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
+        # self.dyn_type = 'mf'
+
+        self.dyn_ind_to_name = {}
+        self.dyn_type = None
 
         self._gtask = np.array(self.get_default_task())
 
@@ -559,19 +561,22 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return
 
-    # Selects which dynamics to be optimized (and randomized) with the corresponding encoded name
+
     def set_random_dynamics_type(self, dyn_type='mf'):
-        if dyn_type == 'mf': # mass friction
+        """Selects which dynamics to be randomized
+        with the corresponding name encoding
+        """
+        if dyn_type == 'mf':  # mass + friction
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
-        elif dyn_type == 'mft': # mass friction+torsional friction
+        elif dyn_type == 'mft':  # mass + friction + torsional friction
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
-        elif dyn_type == 'mfcom': # mass friction com
+        elif dyn_type == 'mfcom':  # mass + friction + com
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1'}
-        elif dyn_type == 'mftcom': # mass friction+torsional com
+        elif dyn_type == 'mftcom':  # mass + friction + torsional + com
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont', 4: 'com0', 5: 'com1'}
-        elif dyn_type == 'mfcomd': # + dampings
+        elif dyn_type == 'mfcomd':  # + joint dampings
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'com0', 4: 'com1', 5: 'damping0', 6: 'damping1', 7: 'damping2', 8: 'damping3', 9: 'damping4', 10: 'damping5', 11: 'damping6'}
-        elif dyn_type == 'd': # dampings
+        elif dyn_type == 'd':  # joint dampings
             self.dyn_ind_to_name = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6'}
         else:
             raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
@@ -588,8 +593,9 @@ class PandaPushEnv(PandaGymEnvironment):
         self.stdev_task = np.zeros(self.task_dim)
         return
 
-    # Returns lowest possible feasible value for each dynamics
+
     def get_task_lower_bound(self, index):
+        """Returns lowest possible feasible value for each dynamics"""
         lowest_value = {
                     'mass': 0.02, # 20gr
                     'frictionx': 0.1,
@@ -607,8 +613,9 @@ class PandaPushEnv(PandaGymEnvironment):
         }
         return lowest_value[self.dyn_ind_to_name[index]]
 
-    # Returns highest possible feasible value for each dynamics
+
     def get_task_upper_bound(self, index):
+        """Returns highest possible feasible value for each dynamics"""
         highest_value = {
                     'mass': 2.0, # 20gr
                     'frictionx': 3.,
@@ -648,9 +655,11 @@ class PandaPushEnv(PandaGymEnvironment):
         return default_task
 
     
-    # Get search bounds for the MEAN of the parameters optimized, the variance search bounds is set accordingly
     def get_search_bounds_mean(self, index):
-       search_bounds_mean = {
+        """Get search bounds for the MEAN of the parameters optimized,
+        the variance search bounds is set accordingly
+        """
+        search_bounds_mean = {
                'mass': (0.08, 2.0),
                'frictionx': (0.2, 2.0),
                'frictiony': (0.2, 2.0),
@@ -666,154 +675,20 @@ class PandaPushEnv(PandaGymEnvironment):
                'damping4': (0,4000),
                'damping5': (0,2000),
                'damping6': (0, 200)
-       }
-       return search_bounds_mean[self.dyn_ind_to_name[index]]
-
-    # Sets the task search bounds based on how they are specified in get_search_bounds_mean
-    # def set_task_search_bounds(self):
-    #     dim_task = len(self.get_task())
-    #     for i in range(dim_task):
-    #         b = self.get_search_bounds_mean(i)
-    #         self.min_task[i], self.max_task[i] = b[0], b[1]
-
-    # def load_dr_distribution_from_file(self, filename):
-    #     dr_type = None
-    #     bounds = None
-
-    #     with open(filename, 'r', encoding='utf-8') as file:
-    #         reader = csv.reader(file, delimiter=',')
-    #         dr_type = str(next(reader)[0])
-    #         bounds = []
-
-    #         second_row = next(reader)
-    #         for col in second_row:
-    #             bounds.append(float(col))
-
-    #     if dr_type is None or bounds is None:
-    #         raise Exception('Unable to read file:'+str(filename))
-
-    #     if len(bounds) != self.task_dim*2:
-    #         raise Exception('The file did not contain the right number of column values')
-
-    #     if dr_type == 'uniform':
-    #         self.set_udr_distribution(bounds)
-    #     elif dr_type == 'truncnorm':
-    #         self.set_truncnorm_distribution(bounds)
-    #     elif dr_type == 'gaussian':
-    #         self.set_gaussian_distribution(bounds)
-    #     else:
-    #         raise Exception('Filename is wrongly formatted: '+str(filename))
-
-    #     return
-
-    # def set_udr_distribution(self, bounds):
-    #     self.sampling = 'uniform'
-    #     for i in range(len(bounds)//2):
-    #         self.min_task[i] = bounds[i*2]
-    #         self.max_task[i] = bounds[i*2 + 1]
-    #     return
-
-    # def set_truncnorm_distribution(self, bounds):
-    #     if len(bounds) != len(self.dyn_ind_to_name.values())*2:
-    #         raise ValueError(f"The task given is not compatible with the dyn type selected (set_truncnorm_distribution). dyn_type:{self.dyn_type} - bounds:{bounds}")
-
-    #     self.sampling = 'truncnorm'
-    #     for i in range(len(bounds)//2):
-    #         self.mean_task[i] = bounds[i*2]
-    #         self.stdev_task[i] = bounds[i*2 + 1]
-    #     return
-
-    # def set_gaussian_distribution(self, bounds):
-    #     self.sampling = 'gaussian'
-    #     for i in range(len(bounds)//2):
-    #         self.mean_task[i] = bounds[i*2]
-    #         self.stdev_task[i] = bounds[i*2 + 1]
-    #     return
-
-    # def set_random_task(self):
-    #     self.set_task(*self.sample_task())
-
-    # def sample_task(self):
-    #     if self.sampling == 'uniform':
-    #         return np.random.uniform(self.min_task, self.max_task, self.min_task.shape)
-
-    #     elif self.sampling == 'truncnorm':
-    #         a,b = -2, 2
-    #         sample = []
-
-    #         for i, (mean, std) in enumerate(zip(self.mean_task, self.stdev_task)):
-                
-    #             threshold = self.get_task_lower_bound(i)
-    #             upper_bound = self.get_task_upper_bound(i)
-
-    #             attempts = 0
-    #             obs = truncnorm.rvs(a, b, loc=mean, scale=std)
-    #             while ( (obs < threshold) or (obs > upper_bound) ):
-    #                 obs = truncnorm.rvs(a, b, loc=mean, scale=std)
-
-    #                 attempts += 1
-    #                 if attempts > 20:
-    #                     obs = threshold if obs < threshold else upper_bound
-    #                     # raise Exception('random observation was not sampled in between the bounds in 20 attempts')
-
-    #             sample.append( obs )
-
-    #         return np.array(sample)
-
-    #     elif self.sampling == 'gaussian':
-    #         sample = []
-
-    #         for mean, std in zip(self.mean_task, self.stdev_task):
-
-    #             # Assuming all parameters > 0.1
-    #             attempts = 0
-    #             obs = np.random.randn()*std + mean
-    #             while obs < 0.1:
-    #                 obs = np.random.randn()*std + mean
-
-    #                 attempts += 1
-    #                 if attempts > 20:
-    #                     raise Exception('Not all samples were above > 0.1 after 20 attempts')
-
-    #             sample.append( obs )
-
-    #         return np.array(sample)
-    #     else:
-    #         raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr from file.')
-
-    #     return
-
-    # def get_randomized_dynamics(self):
-    #     return [dyn for dyn in self.dyn_ind_to_name.values()]
-
-    # Dirty workaround to get whether current env is panda during DROPO computation
-    # def this_is_panda():
-    #     return True
+        }
+        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+
+
+"""
+
+
+    Gym-registered panda push environments
+
+
+"""
+
 ### Goal distribution
 # push_goal_low = np.array([0.3, -0.3])
 # push_goal_high = np.array([0.6, 0.3])
@@ -824,29 +699,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
 panda_start_jpos = np.array([0, 0.15, 0, -2.60, 0, 1.20, 0])
 
-# register_panda_env(
-#     id="PandaPushFixedStart-PosCtrl-v0",
-#     entry_point="%s:PandaPushEnv" % __name__,
-#     model_file="franka_box.xml",
-#     controller=JointPositionController,
-#     controller_kwargs = {"clip_acceleration": False},
-#     action_interpolator=LinearInterpolator,
-#     action_repeat_kwargs={"start_value": env_field("joint_pos")},
-#     model_args = {"actuator_type": "torque",
-#                   "with_goal": True,
-#                   "finger_type": "3dprinted",
-#                   "reduce_damping": True,
-#                   "limit_ctrl": False,
-#                   "limit_force": False},
-#     max_episode_steps=500,
-#     env_kwargs = {"command_type": "new_pos",
-#                   "limit_power": 4,
-#                   "contact_penalties": True,
-#                   "goal_low": push_goal_low,
-#                   "goal_high": push_goal_high}
-# )
-
-## And envs for training
+## Fixed goals for training
 fixed_push_goal_a = np.array([0.75, 0.0])
 fixed_push_goal_b = np.array([0.7, 0.1])
 fixed_push_goal_c = np.array([0.7, -0.1])

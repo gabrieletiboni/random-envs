@@ -61,7 +61,6 @@ class PandaGymEnvironment(gym.Env, Environment):
                  command_type=None,
                  acceleration_penalty_factor=1e-1,
                  limit_power=2,
-                 randomizations={},
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0):
         gym.Env.__init__(self)
@@ -168,14 +167,10 @@ class PandaGymEnvironment(gym.Env, Environment):
         self.action_space = gym.spaces.Box(-max_action, max_action)
         self.observation_space = gym.spaces.Box(-max_obs, max_obs)
 
-        # Initialize meta learning/domain randomization stuff
+        # Initialize domain randomization stuff
         self._needs_rebuilding = False
-        self.randomizations = randomizations
-        self.task_indices = self._get_task_variable_indices()
         self._randomization_setters = {}
         self._init_setters()
-        self._task = None
-        # self.set_random_task() # Handle the randomization in push.py (temporary change by gabriele_dev)
 
     @property
     def robot_obs_dim(self):
@@ -207,23 +202,6 @@ class PandaGymEnvironment(gym.Env, Environment):
 
         interpolate = self._action_repeat(**action_repeat_kwargs)
         return interpolate
-
-    # def set_task_property(self, prop, value):
-    #     """
-    #     :description: This method calls the randimization setter for the given property (as
-    #         defined by the `@randomization_setter` decorator) with the given `value`.
-
-    #     :param prop:  the name of the property (same as passed to
-    #             `@randomization_setter`)
-    #     :param value: the new value for `prop`
-    #     :raises ValueError:  if `prop` does not have a defined setter or is
-    #         not randomized in the current environment
-    #     """
-    #     if prop not in self.randomizations:
-    #         raise ValueError("Property {prop} is not randomized in current env!")
-    #     if prop not in self._randomization_setters:
-    #         raise ValueError(f"Randomization setter not defined for property {prop}!")
-    #     self._randomization_setters[prop](value)
 
     @property
     def goal_pos(self):
@@ -326,23 +304,6 @@ class PandaGymEnvironment(gym.Env, Environment):
         """
         return self.sim.model.opt.timestep * self.interpolate.num
 
-    def _get_task_variable_indices(self):
-        indices = {}
-        current_idx = 0
-        for param, rng in self.randomizations.items():
-            if param[0] == "_" and rng is None:
-                continue
-            param_dim1 = get_dim(rng[0])
-            param_dim2 = get_dim(rng[1])
-            # Make sure min and max have the same dim
-            assert param_dim1 == param_dim2
-            # Make sure the param hasn't been given twice
-            assert param not in indices
-            end_idx = current_idx + param_dim1
-            indices[param] = (current_idx, end_idx)
-            current_idx = end_idx
-        return indices
-
     # This is a special key; it indicates when we need to compile the model.
     # It only makes sense when used with OrderedDict
     # Needed when params changed directly in mjmodel are randomized together
@@ -362,76 +323,6 @@ class PandaGymEnvironment(gym.Env, Environment):
     def _set_controller_kd(self, value):
         assert hasattr(self.controller, "kd")
         self.controller.kd[:] = value
-
-    # def sample_tasks(self, num_tasks):
-    #     return [self.sample_task() for _ in range(num_tasks)]
-
-    # def sample_task(self):
-    #     # Gabriele has temporarily implemented DR in child class
-    #     raise NotImplementedError('Parent sample_task() called instead of child method')
-
-    #     task = []
-    #     for param, rng in self.randomizations.items():
-    #         if param[0] == "_" and rng is None:
-    #             continue
-
-    #         if len(rng) > 2:
-    #             rand_type = rng[2]
-    #         else:
-    #             rand_type = "uniform"
-
-    #         if rand_type == "uniform":
-    #             value = np.random.uniform(rng[0], rng[1])
-    #         elif rand_type == "loguniform":
-    #             dist = loguniform(rng[0], rng[1])
-    #             value= dist.rvs(get_dim(rng[0]))
-    #         elif rand_type == "normal":
-    #             value = np.random.normal(*rng[0].shape) * rng[1] + rng[0]
-    #         else:
-    #             raise ValueError(f"Unknown distribution {rand_type} for {param}")
-
-    #         if isinstance(value, np.ndarray):
-    #             task.extend(value)
-    #         elif isinstance(value, (int, float)):
-    #             task.append(value)
-    #         else:
-    #             # Shouldn't happen...
-    #             raise TypeError("Unknown task type")
-
-    #     return np.array(task)
-
-    # def set_random_task(self):
-    #     """
-    #     :description: This method samples a random task from the task space and
-    #         immediately sets it in the environment.
-    #     :returns: The new task value
-    #     """
-    #     # Gabriele has temporarily implemented DR in child class
-    #     raise NotImplementedError('Parent set_random_task() called instead of child method')
-
-    #     task = self.sample_tasks(1)[0]
-    #     self.set_task(task)
-    #     return task
-
-    # def set_task(self, task):
-    #     print('WARNING - Parent set_task called')
-
-    #     self._task = task
-    #     for param in self.randomizations:
-    #         if param[0] == "_":
-    #             value = None
-    #         else:
-    #             idx_low, idx_high = self.task_indices[param]
-    #             value = task[idx_low:idx_high]
-    #         self.set_task_property(param, value)
-
-    #     if self._needs_rebuilding:
-    #         self.build_model(self.model_args)
-
-    # def get_task(self):
-    #     print('WARNING - Parent get_task called')
-
-    #     return self._task
 
     def randomization_setter(self, param_name):
         def inner(func):
