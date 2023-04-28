@@ -69,7 +69,7 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
                # 'torsosize': (0.1, 1.0),
                'thighsize': (0.1, 1.0),
                'legsize': (0.1, 1.0),
-               'footsize': (0.1, 1.0.),
+               'footsize': (0.1, 1.0),
 
                'friction_right': (0.1, 3.0),
                'friction_left': (0.1, 3.0)
