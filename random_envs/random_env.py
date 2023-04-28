@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+import pdb
 
 import gym
 import numpy as np
@@ -10,6 +11,8 @@ class RandomEnv(gym.Env):
     """
 
     def __init__(self):
+        gym.Env.__init__(self)
+
         self.nominal_values = None
         self.sampling = None
         self.dr_training = False
@@ -272,13 +275,18 @@ class RandomEnv(gym.Env):
                                      percentage: float,
                                      nominal_values: List[float] = None,
                                      dyn_mask: List[int] = None):
-        """Returns uniform DR distribution with a
-        percentage deviation from the nominal values
+        """Returns uniform DR distribution centered in the
+        nominal values, and half-width = percentage *
+        * (nominal_values - lower_bound).
+        nominal values should be set in between the lower and
+        upper bounds, but this is not checked.
 
-            :param percentage: % deviation from nominal values
+            :param percentage: uniform half-width as % of (nominal - lower_bound)
             :param nominal_values: custom nominal values instead of default ones
             :param dyn_mask: randomize some parameters only
         """
+        assert percentage >= 0.0 and percentage <= 1.0
+
         nominal_values = np.array(self.nominal_values if nominal_values is None else nominal_values)
         task_dim = nominal_values.shape[0]
 
@@ -290,7 +298,9 @@ class RandomEnv(gym.Env):
         dr_percentage_per_dim = np.zeros(task_dim)
         dr_percentage_per_dim[dyn_mask] = percentage
 
-        deviation = np.multiply(nominal_values, dr_percentage_per_dim)  # element-wise mult: [ N nominal values ] * [ N DR percentages ]
+        lower_search_bound = np.array([self.get_search_bounds_mean(i)[0] for i in range(task_dim)])
+
+        deviation = np.multiply(nominal_values-lower_search_bound, dr_percentage_per_dim)  # element-wise mult: [ N nominal values ] * [ N DR percentages ]
         bounds_low = nominal_values - deviation
         bounds_high = nominal_values + deviation
         bounds = np.vstack((bounds_low,bounds_high)).reshape((-1,),order='F')  # alternating bounds from the low and high bounds

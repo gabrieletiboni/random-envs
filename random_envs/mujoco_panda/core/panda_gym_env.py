@@ -1,15 +1,23 @@
-import gym
-import numpy as np
-from random_envs.mujoco_panda.core.env import Environment
-from random_envs.mujoco_panda.core.controllers import Controller, JointPositionController, \
-        CartesianImpedanceController, JointImpedanceController, \
-        TorqueController
-from random_envs.mujoco_panda.core.interpolation import LinearInterpolator
-from random_envs.mujoco_panda.core.utils import env_field, register_panda_env, \
-    soft_tanh_limit, get_dim, get_preprocess_action
-from scipy.stats import loguniform
 from copy import deepcopy
 import pdb
+
+import gym
+from scipy.stats import loguniform
+import numpy as np
+
+from random_envs.mujoco_panda.core.env import Environment
+from random_envs.mujoco_panda.core.controllers import Controller, \
+                                                      JointPositionController, \
+                                                      CartesianImpedanceController, \
+                                                      JointImpedanceController, \
+                                                      TorqueController
+from random_envs.mujoco_panda.core.interpolation import LinearInterpolator
+from random_envs.mujoco_panda.core.utils import env_field, \
+                                                register_panda_env, \
+                                                soft_tanh_limit, \
+                                                get_dim, \
+                                                get_preprocess_action
+from random_envs.random_env import RandomEnv
 
 
 class randomization_setter():
@@ -45,7 +53,7 @@ class randomization_setter():
         return self._call_func(*args, **kwargs)
 
 
-class PandaGymEnvironment(gym.Env, Environment):
+class PandaGymEnvironment(RandomEnv, Environment):
     """
     The base class for all Panda gym environments.
     """
@@ -63,7 +71,7 @@ class PandaGymEnvironment(gym.Env, Environment):
                  limit_power=2,
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0):
-        gym.Env.__init__(self)
+        RandomEnv.__init__(self)
         Environment.__init__(self, model_file, init_jpos_jitter=init_jpos_jitter, init_jvel_jitter=init_jvel_jitter, **model_kwargs)
         self.acceleration_penalty_factor = acceleration_penalty_factor
         self.limit_power = limit_power

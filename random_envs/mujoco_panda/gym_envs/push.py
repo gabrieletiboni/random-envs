@@ -343,6 +343,10 @@ class PandaPushEnv(PandaGymEnvironment):
         self.sim.model.site_pos[goal_site_id][:2] = goal
 
     def reset(self):
+        # Sample new dynamics and re_build model if necessary
+        if self.dr_training:
+            self.set_random_task()
+
         super().reset()
         self.set_random_goal()
         start_pos = np.random.uniform(self.init_box_low, self.init_box_high)
@@ -383,7 +387,7 @@ class PandaPushEnv(PandaGymEnvironment):
                           to geometric center
                           Value can also be [x,y] o [y].
         """
-        assert isinstace(value, list)
+        assert isinstance(value, list) or isinstance(value, np.ndarray)
 
         if len(value) == 2:
             # Set com along z-axis to 0.0 (center)
@@ -517,8 +521,8 @@ class PandaPushEnv(PandaGymEnvironment):
                     'frictionx': 0.1,
                     'frictiony': 0.1,
                     'frictiont': 0.001,
-                    'comx': -0.045,
-                    'comy': -0.040,
+                    'comx': -0.05,
+                    'comy': -0.05,
                     'damping0': 0,
                     'damping1': 0,
                     'damping2': 0,
@@ -533,12 +537,12 @@ class PandaPushEnv(PandaGymEnvironment):
     def get_task_upper_bound(self, index):
         """Returns highest possible feasible value for each dynamics"""
         highest_value = {
-                    'mass': 2.0, # 20gr
+                    'mass': 2.0, #2kg
                     'frictionx': 3.,
                     'frictiony': 3.,
                     'frictiont': 1,
-                    'comx': 0.045,
-                    'comy': 0.040,
+                    'comx': 0.05,
+                    'comy': 0.05,
                     'damping0': 5000,
                     'damping1': 5000,
                     'damping2': 5000,
@@ -571,6 +575,7 @@ class PandaPushEnv(PandaGymEnvironment):
         return default_task
 
     
+    ### DROPO-specific method
     def get_search_bounds_mean(self, index):
         """Get search bounds for the MEAN of the parameters optimized,
         the variance search bounds is set accordingly
@@ -582,8 +587,8 @@ class PandaPushEnv(PandaGymEnvironment):
                'frictiont': (0.001, 0.5),
                'solref0': (0.001, 0.02),
                'solref1': (0.4, 1.),
-               'comx': (-0.032, 0.032),
-               'comy': (-0.032, 0.032),
+               'comx': (-0.05, 0.05),
+               'comy': (-0.05, 0.05),
                'damping0': (0,4000),
                'damping1': (0,4000),
                'damping2': (0,4000),
