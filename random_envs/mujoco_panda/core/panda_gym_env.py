@@ -208,22 +208,22 @@ class PandaGymEnvironment(gym.Env, Environment):
         interpolate = self._action_repeat(**action_repeat_kwargs)
         return interpolate
 
-    def set_task_property(self, prop, value):
-        """
-        :description: This method calls the randimization setter for the given property (as
-            defined by the `@randomization_setter` decorator) with the given `value`.
+    # def set_task_property(self, prop, value):
+    #     """
+    #     :description: This method calls the randimization setter for the given property (as
+    #         defined by the `@randomization_setter` decorator) with the given `value`.
 
-        :param prop:  the name of the property (same as passed to
-                `@randomization_setter`)
-        :param value: the new value for `prop`
-        :raises ValueError:  if `prop` does not have a defined setter or is
-            not randomized in the current environment
-        """
-        if prop not in self.randomizations:
-            raise ValueError("Property {prop} is not randomized in current env!")
-        if prop not in self._randomization_setters:
-            raise ValueError(f"Randomization setter not defined for property {prop}!")
-        self._randomization_setters[prop](value)
+    #     :param prop:  the name of the property (same as passed to
+    #             `@randomization_setter`)
+    #     :param value: the new value for `prop`
+    #     :raises ValueError:  if `prop` does not have a defined setter or is
+    #         not randomized in the current environment
+    #     """
+    #     if prop not in self.randomizations:
+    #         raise ValueError("Property {prop} is not randomized in current env!")
+    #     if prop not in self._randomization_setters:
+    #         raise ValueError(f"Randomization setter not defined for property {prop}!")
+    #     self._randomization_setters[prop](value)
 
     @property
     def goal_pos(self):
@@ -363,55 +363,55 @@ class PandaGymEnvironment(gym.Env, Environment):
         assert hasattr(self.controller, "kd")
         self.controller.kd[:] = value
 
-    def sample_tasks(self, num_tasks):
-        return [self.sample_task() for _ in range(num_tasks)]
+    # def sample_tasks(self, num_tasks):
+    #     return [self.sample_task() for _ in range(num_tasks)]
 
-    def sample_task(self):
-        # Gabriele has temporarily implemented DR in child class
-        raise NotImplementedError('Parent sample_task() called instead of child method')
+    # def sample_task(self):
+    #     # Gabriele has temporarily implemented DR in child class
+    #     raise NotImplementedError('Parent sample_task() called instead of child method')
 
-        task = []
-        for param, rng in self.randomizations.items():
-            if param[0] == "_" and rng is None:
-                continue
+    #     task = []
+    #     for param, rng in self.randomizations.items():
+    #         if param[0] == "_" and rng is None:
+    #             continue
 
-            if len(rng) > 2:
-                rand_type = rng[2]
-            else:
-                rand_type = "uniform"
+    #         if len(rng) > 2:
+    #             rand_type = rng[2]
+    #         else:
+    #             rand_type = "uniform"
 
-            if rand_type == "uniform":
-                value = np.random.uniform(rng[0], rng[1])
-            elif rand_type == "loguniform":
-                dist = loguniform(rng[0], rng[1])
-                value= dist.rvs(get_dim(rng[0]))
-            elif rand_type == "normal":
-                value = np.random.normal(*rng[0].shape) * rng[1] + rng[0]
-            else:
-                raise ValueError(f"Unknown distribution {rand_type} for {param}")
+    #         if rand_type == "uniform":
+    #             value = np.random.uniform(rng[0], rng[1])
+    #         elif rand_type == "loguniform":
+    #             dist = loguniform(rng[0], rng[1])
+    #             value= dist.rvs(get_dim(rng[0]))
+    #         elif rand_type == "normal":
+    #             value = np.random.normal(*rng[0].shape) * rng[1] + rng[0]
+    #         else:
+    #             raise ValueError(f"Unknown distribution {rand_type} for {param}")
 
-            if isinstance(value, np.ndarray):
-                task.extend(value)
-            elif isinstance(value, (int, float)):
-                task.append(value)
-            else:
-                # Shouldn't happen...
-                raise TypeError("Unknown task type")
+    #         if isinstance(value, np.ndarray):
+    #             task.extend(value)
+    #         elif isinstance(value, (int, float)):
+    #             task.append(value)
+    #         else:
+    #             # Shouldn't happen...
+    #             raise TypeError("Unknown task type")
 
-        return np.array(task)
+    #     return np.array(task)
 
-    def set_random_task(self):
-        """
-        :description: This method samples a random task from the task space and
-            immediately sets it in the environment.
-        :returns: The new task value
-        """
-        # Gabriele has temporarily implemented DR in child class
-        raise NotImplementedError('Parent set_random_task() called instead of child method')
+    # def set_random_task(self):
+    #     """
+    #     :description: This method samples a random task from the task space and
+    #         immediately sets it in the environment.
+    #     :returns: The new task value
+    #     """
+    #     # Gabriele has temporarily implemented DR in child class
+    #     raise NotImplementedError('Parent set_random_task() called instead of child method')
 
-        task = self.sample_tasks(1)[0]
-        self.set_task(task)
-        return task
+    #     task = self.sample_tasks(1)[0]
+    #     self.set_task(task)
+    #     return task
 
     # def set_task(self, task):
     #     print('WARNING - Parent set_task called')

@@ -487,7 +487,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return mjstate
 
-
+    ### Unused
     def set_box_pos(self, state):
         mjstate = deepcopy(self.get_sim_state())
         puck_posxy = state[14:16]
@@ -497,6 +497,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
         return mjstate
 
+    ### Unused
     def set_box_pos_and_rot(self, state):
         mjstate = deepcopy(self.get_sim_state())
         puck_posxy = state[14:16]
@@ -506,30 +507,6 @@ class PandaPushEnv(PandaGymEnvironment):
         mjstate.qpos[puck_joint_id+3:puck_joint_id+7] = state[18:22]
 
         return mjstate
-
-
-    # def get_task(self, _=None):
-    #     friction = np.array(self.get_puck_friction()) # 5 dims (2 tangential, 1 torsional, 2 rolling )
-    #     mass = np.array(self.get_puck_mass()) # 1 dim, mass of the puck
-    #     box_com = np.array(self.get_box_com()) # 2 dim
-    #     # solref = np.array(self.get_puck_solref()) # 2 dims
-    #     # dampings = np.array(self.get_joint_dampings()) # 7 dims
-    #     # kp = np.array(self.get_contr_kp())
-    #     # kd = np.array(self.get_contr_kd())
-
-    #     pdb.set_trace()
-
-    #     if self.dyn_type == 'mf': # mass friction
-    #         task = np.concatenate((mass, friction[:2]))
-    #     if self.dyn_type == 'mft': # mass friction+torsional friction
-    #         task = np.concatenate((mass, friction[:3]))
-    #     elif self.dyn_type == 'mfcom': # mass friction com
-    #         task = np.concatenate((mass, friction[:2], box_com[:2]))
-    #     elif self.dyn_type == 'mftcom': # mass friction+torsional com
-    #         task = np.concatenate((mass, friction[:3], box_com[:2]))
-    #     else:
-    #         raise NotImplementedError(f"Current randomization type is not implemented (2): {self.dyn_type}")
-    #     return task
 
     def set_joint_dampings(self, dampings):
         self.sim.model.dof_damping[:7] = dampings[:]
