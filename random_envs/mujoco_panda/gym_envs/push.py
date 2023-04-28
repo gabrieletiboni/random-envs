@@ -8,6 +8,7 @@ import gym
 from scipy.spatial.transform import Rotation
 from scipy.stats import truncnorm
 
+import random_envs
 from random_envs.mujoco_panda.core.panda_gym_env import PandaGymEnvironment, randomization_setter
 from random_envs.mujoco_panda.core.controllers import Controller, \
                                        JointPositionController, \
@@ -65,8 +66,7 @@ class PandaPushEnv(PandaGymEnvironment):
                                      init_jpos_jitter=init_jpos_jitter,
                                      init_jvel_jitter=init_jvel_jitter)
 
-        # Override observation space, we now also have the box
-        # (extra 3pos+3velp+3ori+3velr) and the goal (3pos)
+        # Add box orientation to the state space
         if rotation_in_obs == "none":
             rot_dims = 0
         elif rotation_in_obs == "rotz":
@@ -76,7 +76,7 @@ class PandaPushEnv(PandaGymEnvironment):
         else:
             raise ValueError("Invalid rotation_in_obs")
 
-        max_obs = np.array([np.inf]*(self.robot_obs_dim + 6 + rot_dims))
+        max_obs = np.array([np.inf]*(self.robot_obs_dim + 2 + 2 + rot_dims))  # 7 jpos + 7jvel + 2 box pos + 2 goal pos + box_rot_dims
         self.observation_space = gym.spaces.Box(-max_obs, max_obs)
         self.push_prec_alpha = push_prec_alpha
 
@@ -115,7 +115,6 @@ class PandaPushEnv(PandaGymEnvironment):
         self.stdev_task = np.zeros(self.task_dim)
 
         self.reward_threshold = 10000
-
 
         # dropo-specific state space
         self.dropo_mode = False
@@ -182,11 +181,21 @@ class PandaPushEnv(PandaGymEnvironment):
             the package-wide angle convention
         """
         puck_joint_id = self.sim.model.joint_name2id("puck_joint")
+        
         # qpos is a quaternion, we need Euler angles
         quat = self.sim.data.qpos[puck_joint_id+3:puck_joint_id+7]
-        transform = Rotation.from_quat(quat)
 
-        return transform.as_euler(random_envs.mujoco_panda.EULER_ORDER)
+        # note: scipy quaternion format is scalar-last, mujoco's is scalar-first
+        scipy_quat = np.concatenate((quat[1:], [quat[0]]))
+
+        transform = Rotation.from_quat(scipy_quat)
+
+        # I suspect zyx is not the right convention.
+        # Check out eulerseq attribute at https://mujoco.readthedocs.io/en/stable/XMLreference.html#compiler 
+        # euler = transform.as_euler('zyx')  
+        euler = transform.as_euler(random_envs.mujoco_panda.EULER_ORDER)  # I did some tests and this is correct (xyz)
+
+        return euler
 
     @puck_orientation.setter
     def puck_orientation(self, value):
@@ -195,6 +204,10 @@ class PandaPushEnv(PandaGymEnvironment):
         :param value: the new orientation in Euler angles, following the
             package-wide ordering convention
         """
+        print('--- WARNING! scipy quaternions are in scalar-last format, while mujoco expects them with \
+            scalar-first format. Make sure the value variable here is set correctly.')
+        raise ValueError('TODO')
+
         puck_joint_id = self.sim.model.joint_name2id("puck_joint")
         # qpos is a quaternion, we need Euler angles
         transform = Rotation.from_euler(random_envs.mujoco_panda.EULER_ORDER, value)
@@ -297,14 +310,12 @@ class PandaPushEnv(PandaGymEnvironment):
             elif self.rotation_in_obs == "sincosz":
                 rot = [np.sin(self.puck_orientation[2]), np.cos(self.puck_orientation[2])]
 
-            return np.concatenate([super().get_observation(), self.puck_pos,
-                                   rot, self.goal_pos])
+            return np.concatenate([super().get_observation(), self.puck_pos[:2],
+                                   rot, self.goal_pos[:2]])
         else:
-            return np.concatenate([super().get_observation(), self.puck_pos[:3],
-                                   self.puck_velp[:3], self.puck_orientation_quat, self.puck_velr])
+            return np.concatenate([super().get_observation(), self.puck_pos[:],
+                                   self.puck_velp[:], self.puck_orientation_quat, self.puck_velr])
 
-    def set_dropo_mode(self):
-        self.dropo_mode = True
 
     @property
     def goal_dist(self):
@@ -576,6 +587,11 @@ class PandaPushEnv(PandaGymEnvironment):
 
     
     ### DROPO-specific method
+    def set_dropo_mode(self):
+        self.dropo_mode = True
+
+
+    ### DROPO-specific method
     def get_search_bounds_mean(self, index):
         """Get search bounds for the MEAN of the parameters optimized,
         the variance search bounds is set accordingly
@@ -756,6 +772,7 @@ register_panda_env(
                       "goal_low": fixed_push_goal_a,
                       "goal_high": fixed_push_goal_a,
                       "init_jpos_jitter": 0.,
+                      "rotation_in_obs": "sincosz"
             }
         )
 
@@ -786,6 +803,7 @@ for dyn_type in randomized_dynamics:
                           "goal_low": fixed_push_goal_a,
                           "goal_high": fixed_push_goal_a,
                           "init_jpos_jitter": 0.,
+                          "rotation_in_obs": "sincosz",
                           "randomized_dynamics": dyn_type
                 }
             )

@@ -24,5 +24,12 @@ A pushing environment is implemented with Franka Panda robot.
   - target: distance penalty box-target
   - target + guide: distance penalty EE-box
 
+- State space:
+  - +7: robot joint pos
+  - +7: robot joint vel
+  - +2: box pos (x,y)
+  - (optional) +1/+2: box orientation (z-euler angle rotation, or sin and cos of this z-euler angle)
+  - +2: goal pos (x,y)
+
 ### Gym environments
 - PandaPush-PosCtrl-GoalA-v0
