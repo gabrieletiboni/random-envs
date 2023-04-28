@@ -26,7 +26,11 @@ class RandomEnv(gym.Env):
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for current randomized parameter at index `index`"""
-        raise NotImplementedError
+        return -np.inf
+
+    def get_task_upper_bound(self, index):
+        """Returns highest feasible value for current randomized parameter at index `index`"""
+        return np.inf
 
     def get_task(self):
         """Get current dynamics parameters"""
@@ -55,7 +59,8 @@ class RandomEnv(gym.Env):
         """
             If True, episodes are
             never reset due to custom pruning
-            (done always False in .step())
+            (done always False in .step()).
+            This is left to be implemented in child env classes.
 
             Note: episodes will still end according
             to max_timesteps (to be confirmed)
@@ -158,16 +163,17 @@ class RandomEnv(gym.Env):
             sample = []
 
             for i, (mean, std) in enumerate(zip(self.mean_task, self.stdev_task)):
-                lower_bound = self.get_task_lower_bound(i)
+                lower_bound = self.get_task_lower_bound(i) if hasattr(self, 'get_task_lower_bound') else -np.inf
+                upper_bound = self.get_task_upper_bound(i) if hasattr(self, 'get_task_upper_bound') else np.inf
 
                 attempts = 0
                 obs = truncnorm.rvs(a, b, loc=mean, scale=std)
-                while obs < lower_bound:
-                    obs = truncnorm.rvs(a, b, loc=mean, scale=std)
-
-                    attempts += 1
+                while ( (obs < lower_bound) or (obs > upper_bound) ):
                     if attempts > 5:
-                        obs = lower_bound
+                        obs = lower_bound if obs < lower_bound else upper_bound  # Clip value to its corresponding bound
+
+                    obs = truncnorm.rvs(a, b, loc=mean, scale=std)
+                    attempts += 1
 
                 sample.append( obs )
 
@@ -177,16 +183,17 @@ class RandomEnv(gym.Env):
             sample = []
 
             for mean, std in zip(self.mean_task, self.stdev_task):
-                lower_bound = self.get_task_lower_bound(i)
+                lower_bound = self.get_task_lower_bound(i) if hasattr(self, 'get_task_lower_bound') else -np.inf
+                upper_bound = self.get_task_upper_bound(i) if hasattr(self, 'get_task_upper_bound') else np.inf
 
                 attempts = 0
                 obs = np.random.randn()*std + mean
-                while obs < lower_bound:
+                while ( (obs < lower_bound) or (obs > upper_bound) ):
+                    if attempts > 5:
+                        obs = lower_bound if obs < lower_bound else upper_bound  # Clip value to its corresponding bound
                     obs = np.random.randn()*std + mean
 
                     attempts += 1
-                    if attempts > 5:
-                        obs = lower_bound
 
                 sample.append( obs )
 

@@ -693,41 +693,41 @@ class PandaPushEnv(PandaGymEnvironment):
        return search_bounds_mean[self.dyn_ind_to_name[index]]
 
     # Sets the task search bounds based on how they are specified in get_search_bounds_mean
-    def set_task_search_bounds(self):
-        dim_task = len(self.get_task())
-        for i in range(dim_task):
-            b = self.get_search_bounds_mean(i)
-            self.min_task[i], self.max_task[i] = b[0], b[1]
+    # def set_task_search_bounds(self):
+    #     dim_task = len(self.get_task())
+    #     for i in range(dim_task):
+    #         b = self.get_search_bounds_mean(i)
+    #         self.min_task[i], self.max_task[i] = b[0], b[1]
 
-    def load_dr_distribution_from_file(self, filename):
-        dr_type = None
-        bounds = None
+    # def load_dr_distribution_from_file(self, filename):
+    #     dr_type = None
+    #     bounds = None
 
-        with open(filename, 'r', encoding='utf-8') as file:
-            reader = csv.reader(file, delimiter=',')
-            dr_type = str(next(reader)[0])
-            bounds = []
+    #     with open(filename, 'r', encoding='utf-8') as file:
+    #         reader = csv.reader(file, delimiter=',')
+    #         dr_type = str(next(reader)[0])
+    #         bounds = []
 
-            second_row = next(reader)
-            for col in second_row:
-                bounds.append(float(col))
+    #         second_row = next(reader)
+    #         for col in second_row:
+    #             bounds.append(float(col))
 
-        if dr_type is None or bounds is None:
-            raise Exception('Unable to read file:'+str(filename))
+    #     if dr_type is None or bounds is None:
+    #         raise Exception('Unable to read file:'+str(filename))
 
-        if len(bounds) != self.task_dim*2:
-            raise Exception('The file did not contain the right number of column values')
+    #     if len(bounds) != self.task_dim*2:
+    #         raise Exception('The file did not contain the right number of column values')
 
-        if dr_type == 'uniform':
-            self.set_udr_distribution(bounds)
-        elif dr_type == 'truncnorm':
-            self.set_truncnorm_distribution(bounds)
-        elif dr_type == 'gaussian':
-            self.set_gaussian_distribution(bounds)
-        else:
-            raise Exception('Filename is wrongly formatted: '+str(filename))
+    #     if dr_type == 'uniform':
+    #         self.set_udr_distribution(bounds)
+    #     elif dr_type == 'truncnorm':
+    #         self.set_truncnorm_distribution(bounds)
+    #     elif dr_type == 'gaussian':
+    #         self.set_gaussian_distribution(bounds)
+    #     else:
+    #         raise Exception('Filename is wrongly formatted: '+str(filename))
 
-        return
+    #     return
 
     # def set_udr_distribution(self, bounds):
     #     self.sampling = 'uniform'
@@ -753,58 +753,58 @@ class PandaPushEnv(PandaGymEnvironment):
     #         self.stdev_task[i] = bounds[i*2 + 1]
     #     return
 
-    def set_random_task(self):
-        self.set_task(*self.sample_task())
+    # def set_random_task(self):
+    #     self.set_task(*self.sample_task())
 
-    def sample_task(self):
-        if self.sampling == 'uniform':
-            return np.random.uniform(self.min_task, self.max_task, self.min_task.shape)
+    # def sample_task(self):
+    #     if self.sampling == 'uniform':
+    #         return np.random.uniform(self.min_task, self.max_task, self.min_task.shape)
 
-        elif self.sampling == 'truncnorm':
-            a,b = -2, 2
-            sample = []
+    #     elif self.sampling == 'truncnorm':
+    #         a,b = -2, 2
+    #         sample = []
 
-            for i, (mean, std) in enumerate(zip(self.mean_task, self.stdev_task)):
+    #         for i, (mean, std) in enumerate(zip(self.mean_task, self.stdev_task)):
                 
-                threshold = self.get_task_lower_bound(i)
-                upper_bound = self.get_task_upper_bound(i)
+    #             threshold = self.get_task_lower_bound(i)
+    #             upper_bound = self.get_task_upper_bound(i)
 
-                attempts = 0
-                obs = truncnorm.rvs(a, b, loc=mean, scale=std)
-                while ( (obs < threshold) or (obs > upper_bound) ):
-                    obs = truncnorm.rvs(a, b, loc=mean, scale=std)
+    #             attempts = 0
+    #             obs = truncnorm.rvs(a, b, loc=mean, scale=std)
+    #             while ( (obs < threshold) or (obs > upper_bound) ):
+    #                 obs = truncnorm.rvs(a, b, loc=mean, scale=std)
 
-                    attempts += 1
-                    if attempts > 20:
-                        obs = threshold if obs < threshold else upper_bound
-                        # raise Exception('random observation was not sampled in between the bounds in 20 attempts')
+    #                 attempts += 1
+    #                 if attempts > 20:
+    #                     obs = threshold if obs < threshold else upper_bound
+    #                     # raise Exception('random observation was not sampled in between the bounds in 20 attempts')
 
-                sample.append( obs )
+    #             sample.append( obs )
 
-            return np.array(sample)
+    #         return np.array(sample)
 
-        elif self.sampling == 'gaussian':
-            sample = []
+    #     elif self.sampling == 'gaussian':
+    #         sample = []
 
-            for mean, std in zip(self.mean_task, self.stdev_task):
+    #         for mean, std in zip(self.mean_task, self.stdev_task):
 
-                # Assuming all parameters > 0.1
-                attempts = 0
-                obs = np.random.randn()*std + mean
-                while obs < 0.1:
-                    obs = np.random.randn()*std + mean
+    #             # Assuming all parameters > 0.1
+    #             attempts = 0
+    #             obs = np.random.randn()*std + mean
+    #             while obs < 0.1:
+    #                 obs = np.random.randn()*std + mean
 
-                    attempts += 1
-                    if attempts > 20:
-                        raise Exception('Not all samples were above > 0.1 after 20 attempts')
+    #                 attempts += 1
+    #                 if attempts > 20:
+    #                     raise Exception('Not all samples were above > 0.1 after 20 attempts')
 
-                sample.append( obs )
+    #             sample.append( obs )
 
-            return np.array(sample)
-        else:
-            raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr from file.')
+    #         return np.array(sample)
+    #     else:
+    #         raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr from file.')
 
-        return
+    #     return
 
     # def get_randomized_dynamics(self):
     #     return [dyn for dyn in self.dyn_ind_to_name.values()]
