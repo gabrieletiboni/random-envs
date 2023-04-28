@@ -58,18 +58,18 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               # 'torso': (0.5, 10.0),
-               # 'thigh': (0.5, 10.0),
-               # 'leg': (0.5, 10.0),
-               'foot': (0.5, 10.0),
-               'thigh_left': (0.5, 10.0),
-               'leg_left': (0.5, 10.0),
-               'foot_left': (0.5, 10.0),
+               # 'torso': (0.1, 10.0),
+               # 'thigh': (0.1, 10.0),
+               # 'leg': (0.1, 10.0),
+               'foot': (0.1, 10.0),
+               'thigh_left': (0.1, 10.0),
+               'leg_left': (0.1, 10.0),
+               'foot_left': (0.1, 10.0),
 
                # 'torsosize': (0.1, 1.0),
-               'thighsize': (0.3, 1.0),
-               'legsize': (0.3, 1.0),
-               'footsize': (0.15, 0.8),
+               'thighsize': (0.1, 1.0),
+               'legsize': (0.1, 1.0),
+               'footsize': (0.1, 1.0.),
 
                'friction_right': (0.1, 3.0),
                'friction_left': (0.1, 3.0)
@@ -91,9 +91,9 @@ class RandomWalker2dUnmodeled(MujocoEnv, utils.EzPickle):
                     'foot_left': 0.1,
 
                     # 'torsosize': 0.1,
-                    'thighsize': 0.25,
-                    'legsize': 0.25,
-                    'footsize': 0.12,
+                    'thighsize': 0.1,
+                    'legsize': 0.1,
+                    'footsize': 0.1,
 
                     'friction_right': 0.05,
                     'friction_left': 0.05

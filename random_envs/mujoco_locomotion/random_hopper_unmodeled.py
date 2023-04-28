@@ -49,9 +49,9 @@ class RandomHopperUnmodeledEnv(MujocoEnv, utils.EzPickle):
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               'thighmass': (0.5, 10.0),
-               'legmass': (0.5, 10.0),
-               'footmass': (0.5, 10.0),
+               'thighmass': (0.1, 10.0),
+               'legmass': (0.1, 10.0),
+               'footmass': (0.1, 10.0),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 

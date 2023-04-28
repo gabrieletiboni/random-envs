@@ -51,13 +51,13 @@ class RandomHalfCheetahUnmodeled(MujocoEnv, utils.EzPickle):
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               # 'torso': (0.5, 10.0),
-               # 'bthigh': (0.5, 10.0),
-               # 'bshin': (0.5, 10.0),
-               'bfoot': (0.5, 10.0),
-               'fthigh': (0.5, 10.0),
-               'fshin': (0.5, 10.0),
-               'ffoot': (0.5, 10.0),
+               # 'torso': (0.1, 10.0),
+               # 'bthigh': (0.1, 10.0),
+               # 'bshin': (0.1, 10.0),
+               'bfoot': (0.1, 10.0),
+               'fthigh': (0.1, 10.0),
+               'fshin': (0.1, 10.0),
+               'ffoot': (0.1, 10.0),
                'friction': (0.1, 2.0),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]

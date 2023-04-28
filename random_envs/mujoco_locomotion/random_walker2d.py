@@ -55,18 +55,18 @@ class RandomWalker2dEnv(MujocoEnv, utils.EzPickle):
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               'torso': (0.5, 10.0),
-               'thigh': (0.5, 10.0),
-               'leg': (0.5, 10.0),
-               'foot': (0.5, 10.0),
-               'thigh_left': (0.5, 10.0),
-               'leg_left': (0.5, 10.0),
-               'foot_left': (0.5, 10.0),
+               'torso': (0.1, 10.0),
+               'thigh': (0.1, 10.0),
+               'leg': (0.1, 10.0),
+               'foot': (0.1, 10.0),
+               'thigh_left': (0.1, 10.0),
+               'leg_left': (0.1, 10.0),
+               'foot_left': (0.1, 10.0),
 
-               'torsosize': (0.15, 1.0),
-               'thighsize': (0.15, 1.0),
-               'legsize': (0.15, 1.0),
-               'footsize': (0.15, 1.0),
+               'torsosize': (0.1, 1.0),
+               'thighsize': (0.1, 1.0),
+               'legsize': (0.1, 1.0),
+               'footsize': (0.1, 1.0),
 
                'friction_right': (0.1, 3.0),
                'friction_left': (0.1, 3.0)

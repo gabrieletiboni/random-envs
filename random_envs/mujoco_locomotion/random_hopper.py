@@ -51,10 +51,10 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               'torsomass': (0.5, 10.0),
-               'thighmass': (0.5, 10.0),
-               'legmass': (0.5, 10.0),
-               'footmass': (0.5, 10.0),
+               'torsomass': (0.1, 10.0),
+               'thighmass': (0.1, 10.0),
+               'legmass': (0.1, 10.0),
+               'footmass': (0.1, 10.0),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 
@@ -64,10 +64,10 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
         Used for resampling unfeasible values during domain randomization
         """
         lowest_value = {
-                    'torsomass': 0.1,
-                    'thighmass': 0.1,
-                    'legmass': 0.1,
-                    'footmass': 0.1
+                    'torsomass': 0.001,
+                    'thighmass': 0.001,
+                    'legmass': 0.001,
+                    'footmass': 0.001
         }
 
         return lowest_value[self.dyn_ind_to_name[index]]
