@@ -70,7 +70,8 @@ class PandaGymEnvironment(RandomEnv, Environment):
                  acceleration_penalty_factor=1e-1,
                  limit_power=2,
                  init_jpos_jitter=0.2,
-                 init_jvel_jitter=0.0):
+                 init_jvel_jitter=0.0,
+                 norm_reward=False):
         RandomEnv.__init__(self)
         Environment.__init__(self, model_file, init_jpos_jitter=init_jpos_jitter, init_jvel_jitter=init_jvel_jitter, **model_kwargs)
         self.acceleration_penalty_factor = acceleration_penalty_factor
@@ -88,6 +89,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
                       f" {desired_interval}. Actual: {actual_dt}")
             action_repeat_kwargs["num"] = repeat_num_rounded
 
+        self.norm_reward = norm_reward
         self.control_penalty_coeff = 1.
         self._action_repeat_kwargs = dict(action_repeat_kwargs)
         self._action_repeat = action_interpolator
@@ -299,6 +301,12 @@ class PandaGymEnvironment(RandomEnv, Environment):
                 "acceleration_over_limit": (1-self.check_joint_acceleration_limit()).sum(),
                 "control_penalty": control_penalty}
         reward = task_reward + control_penalty
+
+        if self.norm_reward:
+            # Linearly scale reward in [-1, 1] assuming rough interval [1000, 2000]
+            m = (1 - (-1)) / (2000-1000)
+            reward = m * (reward - 2000) + 1
+
         return state, reward, False, info
 
     def get_task_reward(self):
