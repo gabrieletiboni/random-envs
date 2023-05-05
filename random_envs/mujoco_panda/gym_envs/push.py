@@ -782,39 +782,41 @@ register_panda_env(
 
 randomized_dynamics = ['mf', 'mft', 'mfcom', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
 norm_reward_bool=[True, False]
+task_rewards = ['target', 'guide']
 
 for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
-        register_panda_env(
-                id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{('-NormReward' if norm_reward else '')}-v0",
-                entry_point="%s:PandaPushEnv" % __name__,
-                model_file="franka_box.xml",
-                controller=JointPositionController,
-                controller_kwargs = {"clip_acceleration": False},
-                action_interpolator=QuadraticInterpolator,
-                action_repeat_kwargs={"start_pos": env_field("joint_pos"),
-                                    "start_vel": env_field("joint_vel"),
-                                    "dt": env_field("sim_dt")},
-                model_args = {"actuator_type": "torque",
-                              "with_goal": True,
-                              "finger_type": "3dprinted",
-                              "reduce_damping": True,
-                              "limit_ctrl": False,
-                              "limit_force": False,
-                              "init_joint_pos": panda_start_jpos},
-                max_episode_steps=500,
-                env_kwargs = {"command_type": "acc",
-                              "limit_power": 4,
-                              "contact_penalties": True,
-                              "task_reward": "target",
-                              "norm_reward": norm_reward,
-                              "goal_low": fixed_push_goal_a,
-                              "goal_high": fixed_push_goal_a,
-                              "init_jpos_jitter": 0.,
-                              "rotation_in_obs": "sincosz",
-                              "randomized_dynamics": dyn_type
-                    }
-                )
+        for task_reward in task_rewards:
+            register_panda_env(
+                    id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                    entry_point="%s:PandaPushEnv" % __name__,
+                    model_file="franka_box.xml",
+                    controller=JointPositionController,
+                    controller_kwargs = {"clip_acceleration": False},
+                    action_interpolator=QuadraticInterpolator,
+                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                                        "start_vel": env_field("joint_vel"),
+                                        "dt": env_field("sim_dt")},
+                    model_args = {"actuator_type": "torque",
+                                  "with_goal": True,
+                                  "finger_type": "3dprinted",
+                                  "reduce_damping": True,
+                                  "limit_ctrl": False,
+                                  "limit_force": False,
+                                  "init_joint_pos": panda_start_jpos},
+                    max_episode_steps=500,
+                    env_kwargs = {"command_type": "acc",
+                                  "limit_power": 4,
+                                  "contact_penalties": True,
+                                  "task_reward": task_reward,
+                                  "norm_reward": norm_reward,
+                                  "goal_low": fixed_push_goal_a,
+                                  "goal_high": fixed_push_goal_a,
+                                  "init_jpos_jitter": 0.,
+                                  "rotation_in_obs": "sincosz",
+                                  "randomized_dynamics": dyn_type
+                        }
+                    )
 
 
 register_panda_env(
