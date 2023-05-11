@@ -252,6 +252,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
 
         Environment.reset(self)
         self.interpolate.reset()
+        self.controller.reset()
         for cb in self.callbacks:
             cb.post_reset(self)
         return self.get_observation()
