@@ -162,7 +162,7 @@ class RandomCartPoleEnv(RandomEnv):
         self.stdev_task = np.zeros(self.task_dim)
 
         if self.inverted:
-            self.reward_threshold = 0
+            self.reward_threshold = 4000
         else:
             self.reward_threshold = 500
 
@@ -267,14 +267,23 @@ class RandomCartPoleEnv(RandomEnv):
             # if x < -self.x_threshold or x > self.x_threshold:  # penalty for early termination
             #     reward -= 1000
 
-            if not done:  # alive bonus
-                reward += 2
-            elif self.steps_beyond_done is None:
-                reward -= 50
+            # if not done:  # alive bonus
+            #     reward += 5
+            # elif self.steps_beyond_done is None:
+            #     reward -= 100
+            #     self.steps_beyond_done = 0
+            # else:
+            #     reward = 0
+            #     self.steps_beyond_done += 1
+
+            if not done:
+                reward += 10  # positive reward encourages the agent to atleast stay alive
+            elif self.steps_beyond_done is None:  # done just turned True
                 self.steps_beyond_done = 0
+                reward += 0
             else:
-                reward = 0
                 self.steps_beyond_done += 1
+                reward = 0
 
             info['norm_theta'] = self.angle_normalize(theta)
         else:
