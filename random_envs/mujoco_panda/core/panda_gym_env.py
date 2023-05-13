@@ -67,14 +67,13 @@ class PandaGymEnvironment(RandomEnv, Environment):
                  render_camera="side_camera",
                  render_res=(320, 240),
                  command_type=None,
-                 acceleration_penalty_factor=1e-1,
+                 control_penalty_coeff=1.,
                  limit_power=2,
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
                  norm_reward=False):
         RandomEnv.__init__(self)
         Environment.__init__(self, model_file, init_jpos_jitter=init_jpos_jitter, init_jvel_jitter=init_jvel_jitter, **model_kwargs)
-        self.acceleration_penalty_factor = acceleration_penalty_factor
         self.limit_power = limit_power
         if "num" not in action_repeat_kwargs:
             # No value was provided; just fix it to provide 20ms control intervals
@@ -90,7 +89,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
             action_repeat_kwargs["num"] = repeat_num_rounded
 
         self.norm_reward = norm_reward
-        self.control_penalty_coeff = 1.
+        self.control_penalty_coeff = control_penalty_coeff  # penalize pos, vel and acc when they are close to the limits
         self._action_repeat_kwargs = dict(action_repeat_kwargs)
         self._action_repeat = action_interpolator
         self.interpolate = self._build_interpolator()

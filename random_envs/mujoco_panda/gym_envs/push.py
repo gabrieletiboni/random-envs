@@ -35,7 +35,6 @@ class PandaPushEnv(PandaGymEnvironment):
                  task_reward="guide",
                  norm_reward=False,
                  command_type="new_pos",
-                 acceleration_penalty_factor=1e-2,
                  limit_power=2,
                  contact_penalties=False,
                  goal_low=np.array([.7, -.3]),
@@ -46,7 +45,7 @@ class PandaPushEnv(PandaGymEnvironment):
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
                  rotation_in_obs="none",
-                 control_penalty_coeff=3,
+                 control_penalty_coeff=1.,
                  randomized_dynamics='mf'):
         self.goal_low = goal_low
         self.goal_high = goal_high
@@ -62,7 +61,7 @@ class PandaPushEnv(PandaGymEnvironment):
                                      render_camera=render_camera,
                                      render_res=render_res,
                                      command_type=command_type,
-                                     acceleration_penalty_factor=acceleration_penalty_factor,
+                                     control_penalty_coeff=control_penalty_coeff,
                                      limit_power=limit_power,
                                      init_jpos_jitter=init_jpos_jitter,
                                      init_jvel_jitter=init_jvel_jitter,
@@ -86,7 +85,6 @@ class PandaPushEnv(PandaGymEnvironment):
 
         self.last_dist_from_target = 0  # delta_distance appended to info dict
         self.task_reward = task_reward
-        self.control_penalty_coeff = control_penalty_coeff  # penalize pos, vel and acc when they are close to the limits
 
         self.contact_penalties_enabled = contact_penalties  # penalize contact-pairs proportional to penetration distance
         self.contact_penalties = [("box", "table", 1e2),
