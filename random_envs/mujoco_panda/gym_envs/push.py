@@ -114,7 +114,10 @@ class PandaPushEnv(PandaGymEnvironment):
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.reward_threshold = 10000
+        if self.norm_reward:
+            self.reward_threshold = 300
+        else:
+            self.reward_threshold = 2500
 
         self.wandb_extra_metrics = {'last_dist_from_target': 'box_goal_distance'}
 
