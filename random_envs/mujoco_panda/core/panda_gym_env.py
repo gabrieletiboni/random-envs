@@ -300,7 +300,8 @@ class PandaGymEnvironment(RandomEnv, Environment):
                 "velocity_over_limit": (1-self.check_joint_velocity_limit()).sum(),
                 "position_over_limit": (1-self.check_joint_position_limit()).sum(),
                 "acceleration_over_limit": (1-self.check_joint_acceleration_limit()).sum(),
-                "control_penalty": control_penalty}
+                "control_penalty": control_penalty,
+                "goal_dist": self.goal_dist}
         reward = task_reward + control_penalty
 
         if self.norm_reward:
