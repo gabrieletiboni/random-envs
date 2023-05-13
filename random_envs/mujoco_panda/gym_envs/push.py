@@ -77,16 +77,16 @@ class PandaPushEnv(PandaGymEnvironment):
             rot_dims = 2
         else:
             raise ValueError("Invalid rotation_in_obs")
+        self.rotation_in_obs = rotation_in_obs
 
         max_obs = np.array([np.inf]*(self.robot_obs_dim + 2 + 2 + rot_dims))  # 7 jpos + 7jvel + 2 box pos + 2 goal pos + box_rot_dims
         self.observation_space = gym.spaces.Box(-max_obs, max_obs)
         self.push_prec_alpha = push_prec_alpha
 
-        self.rotation_in_obs = rotation_in_obs
 
+        self.last_dist_from_target = 0  # delta_distance appended to info dict
         self.task_reward = task_reward
         self.control_penalty_coeff = control_penalty_coeff  # penalize pos, vel and acc when they are close to the limits
-        self.last_dist_from_target = 0  # delta_distance appended to info dict
 
         self.contact_penalties_enabled = contact_penalties  # penalize contact-pairs proportional to penetration distance
         self.contact_penalties = [("box", "table", 1e2),

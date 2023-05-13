@@ -22,7 +22,15 @@ A pushing environment is implemented with Franka Panda robot.
 
 - Reward function:
   - target: distance penalty box-target
-  - target + guide: distance penalty EE-box
+  - guide: distance penalty EE-box
+  - control penalty: penalty for jpos, jvel and jacc which get close to the limits. Each of the three terms is bounded in [0,1].
+    - Checkout commit f5e9938576778a517ff80631b174c6c6e0f6cc8a to visualize the plots
+  - contact penalty: penalize contact-pairs proportional to their penetration distance
+    - ("box", "table", 1e2)
+    - ("panda0_finger1", "box", 1e2)
+    - ("panda0_finger2", "box", 1e2)
+    - ("panda0_finger1", "table", 3e7)
+    - ("panda0_finger2", "table", 3e7)
 
 - State space:
   - +7: robot joint pos
