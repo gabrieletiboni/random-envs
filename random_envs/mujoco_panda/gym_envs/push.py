@@ -348,8 +348,6 @@ class PandaPushEnv(PandaGymEnvironment):
             goal_term = distance_penalty(goal_dist, alpha=self.push_prec_alpha)
             guide_term = distance_penalty(guide_dist, alpha=1e-1)
 
-        print(f'goal_term {goal_term} | guide_term {guide_term}')
-
         if self.task_reward == "guide":
             return goal_term + 0.1 * guide_term
         elif self.task_reward == "lessguide":
