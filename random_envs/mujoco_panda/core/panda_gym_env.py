@@ -293,6 +293,54 @@ class PandaGymEnvironment(RandomEnv, Environment):
         control_penalty = velocity_penalty + acceleration_penalty + position_penalty
         control_penalty *= -self.control_penalty_coeff
 
+        ### TEMP SCRIPT TO VISUALIZE CONTROL PENALTY CURVES ####################
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(8,5))
+
+        n_points = 100
+        which_joint = 3
+
+        # pdb.set_trace()
+        # pos
+        print(f'pos limits: \n\t{self.joint_qpos_min} \n\t{self.joint_qpos_max}')
+        mean_value = ((self.joint_qpos_max+self.joint_qpos_min)/2)[np.newaxis, :]
+        print('mean:', mean_value)
+        pos_x = np.repeat(mean_value, 100, axis=0)
+        pos_x[:, which_joint] = np.linspace(self.joint_qpos_min[which_joint], self.joint_qpos_max[which_joint], 100)
+        pos_y = [soft_tanh_limit(pos, self.joint_qpos_min,
+                self.joint_qpos_max, square_coeff=0., betas=(0.1, 0.1))[which_joint] for pos in pos_x]
+
+        ax[0].plot(pos_x[:,which_joint], pos_y, c='blue', linestyle='-', label='Joint pos soft tanh')
+        ax[0].set_title('Joint pos soft tanh')
+        
+
+        # vel
+        mean_value = ((self.joint_qvel_max+self.joint_qvel_min)/2)[np.newaxis, :]
+        pos_x = np.repeat(mean_value, 100, axis=0)
+        pos_x[:, which_joint] = np.linspace(self.joint_qvel_min[which_joint], self.joint_qvel_max[which_joint], 100)
+        pos_y = [soft_tanh_limit(pos, self.joint_qvel_min,
+                self.joint_qvel_max, square_coeff=0.5, betas=(0.2, 0.2))[which_joint] for pos in pos_x]
+
+        ax[1].plot(pos_x[:,which_joint], pos_y, c='blue', linestyle='-', label='Joint vel soft tanh')
+        ax[1].set_title('Joint vel soft tanh')
+
+        # acc
+        mean_value = ((self.joint_qacc_max-self.joint_qacc_max)/2)[np.newaxis, :]
+        pos_x = np.repeat(mean_value, 100, axis=0)
+        pos_x[:, which_joint] = np.linspace(-self.joint_qacc_max[which_joint], self.joint_qacc_max[which_joint], 100)
+        pos_y = [soft_tanh_limit(pos, -self.joint_qacc_max,
+                self.joint_qacc_max, square_coeff=0.5, betas=(0.2, 0.2))[which_joint] for pos in pos_x]
+
+        ax[2].plot(pos_x[:,which_joint], pos_y, c='blue', linestyle='-', label='Joint acc soft tanh')
+        ax[2].set_title('Joint acc soft tanh')
+
+
+        plt.show()
+        import sys
+        sys.exit()
+        ### TEMP ###############################################################
+
+
         info = {"task_reward": task_reward,
                 "velocity_penalty": -velocity_penalty*self.control_penalty_coeff,
                 "position_penalty": -position_penalty*self.control_penalty_coeff,
