@@ -321,6 +321,9 @@ class RandomCartPoleEnv(RandomEnv):
             return np.array(self.state)
 
     def reset(self):
+        if self.dr_training:
+            self.set_random_task() # Sample new dynamics
+
         if self.inverted:
             # x, x_dot, theta, theta_dot
             all_but_theta = tuple(self.np_random.uniform(low=-0.05, high=0.05, size=(3,)))  # x, x_dot, theta_dot
