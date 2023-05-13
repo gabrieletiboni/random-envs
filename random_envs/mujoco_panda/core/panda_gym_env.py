@@ -289,7 +289,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
                 self.joint_qvel_max, betas=(0.2, 0.2), square_coeff=0.5).sum()
         acceleration_penalty = soft_tanh_limit(self.joint_acc,
                 -self.joint_qacc_max, self.joint_qacc_max, betas=(0.2, 0.2), square_coeff=0.5).sum()
-        control_penalty = velocity_penalty + acceleration_penalty + position_penalty
+        control_penalty = velocity_penalty + acceleration_penalty + position_penalty  # each term is bounded between [0, 1]
         control_penalty *= -self.control_penalty_coeff
 
         info = {"task_reward": task_reward,
@@ -300,13 +300,9 @@ class PandaGymEnvironment(RandomEnv, Environment):
                 "position_over_limit": (1-self.check_joint_position_limit()).sum(),
                 "acceleration_over_limit": (1-self.check_joint_acceleration_limit()).sum(),
                 "control_penalty": control_penalty,
-                "goal_dist": self.goal_dist}
+                "goal_dist": self.goal_dist,
+                "guide_dist": np.sqrt(np.sum((self.puck_pos - self.gripper_pos)**2))}
         reward = task_reward + control_penalty
-
-        if self.norm_reward:
-            # Linearly scale reward in [-1, 1] assuming rough interval [1000, 2000]
-            m = (1 - (-1)) / (2000-1000)
-            reward = m * (reward - 2000) + 1
 
         return state, reward, False, info
 

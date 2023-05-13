@@ -327,13 +327,28 @@ class PandaPushEnv(PandaGymEnvironment):
     def get_task_reward(self):
         guide_dist = np.sqrt(np.sum((self.puck_pos - self.gripper_pos)**2))
 
-        # Prevent both terms from reaching super low values if things go wrong
+        # Prevent both terms from reaching super high values if things go wrong
         # (it can make the training a bit unstable)
         guide_dist = min(guide_dist, 2)
         goal_dist = min(self.goal_dist, 2)
 
-        guide_term = distance_penalty(guide_dist, alpha=1e-1)
-        goal_term = distance_penalty(goal_dist, alpha=self.push_prec_alpha)
+        if self.norm_reward:
+            """
+                f(d) = -x^2 -ln(x^2 + alpha)
+                reward(d) = f(c*d)/a  # stretching and normalizing
+
+                See more at: https://www.desmos.com/calculator/w12fnkzejn
+            """
+            c_goal, a_goal, alpha_goal =  3.12, 4.6, 0.01
+            goal_term = distance_penalty(c_goal*goal_dist, alpha=alpha_goal)/a_goal
+
+            c_guide, a_guide, alpha_guide = 7.75, 0.693, 0.5
+            guide_term = distance_penalty(c_guide*guide_dist, alpha=alpha_guide)/a_guide
+        else:
+            goal_term = distance_penalty(goal_dist, alpha=self.push_prec_alpha)
+            guide_term = distance_penalty(guide_dist, alpha=1e-1)
+
+        print(f'goal_term {goal_term} | guide_term {guide_term}')
 
         if self.task_reward == "guide":
             return goal_term + 0.1 * guide_term
@@ -769,7 +784,7 @@ register_panda_env(
         env_kwargs = {"command_type": "acc",
                       "limit_power": 4,
                       "contact_penalties": True,
-                      "control_penalty_coeff": 1.,
+                      "control_penalty_coeff": 0.5,
                       "task_reward": "target",
                       "goal_low": fixed_push_goal_a,
                       "goal_high": fixed_push_goal_a,
@@ -807,7 +822,7 @@ for dyn_type in randomized_dynamics:
                     env_kwargs = {"command_type": "acc",
                                   "limit_power": 4,
                                   "contact_penalties": True,
-                                  "control_penalty_coeff": 1.,
+                                  "control_penalty_coeff": 0.5,
                                   "task_reward": task_reward,
                                   "norm_reward": norm_reward,
                                   "goal_low": fixed_push_goal_a,
