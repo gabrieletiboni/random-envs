@@ -3,7 +3,7 @@ Classic cart-pole system implemented by Rich Sutton et al.
 Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
-
+import pdb
 import math
 import gym
 from gym import spaces, logger
@@ -11,9 +11,6 @@ from gym.utils import seeding
 import numpy as np
 
 from random_envs.random_env import RandomEnv
-
-# def rand_in_range(minv, maxv):
-#     return np.random.rand() * (maxv-minv) + minv
 
 
 class RandomCartPoleEnv(RandomEnv):
@@ -29,12 +26,21 @@ class RandomCartPoleEnv(RandomEnv):
         described by Barto, Sutton, and Anderson
 
     Observation:
-        Type: Box(4)
-        Num     Observation               Min                     Max
-        0       Cart Position             -4.8                    4.8
-        1       Cart Velocity             -Inf                    Inf
-        2       Pole Angle                -0.418 rad (-24 deg)    0.418 rad (24 deg)
-        3       Pole Angular Velocity     -Inf                    Inf
+        vanilla:
+            Type: Box(4)
+            Num     Observation               Min                     Max
+            0       Cart Position             -4.8                    4.8
+            1       Cart Velocity             -Inf                    Inf
+            2       Pole Angle                -0.418 rad (-24 deg)    0.418 rad (24 deg)
+            3       Pole Angular Velocity     -Inf                    Inf
+        inverted:
+            Type: Box(5)
+            Num     Observation               Min                     Max
+            0       Cart Position             -4.8                    4.8
+            1       Cart Velocity             -Inf                    Inf
+            2       Pole Cos(Angle)           -1                      1
+            3       Pole Sin(Angle)           -1                      1
+            4       Pole Angular Velocity     -Inf                    Inf
 
     Actions:
         Type: Discrete(2)
@@ -48,19 +54,32 @@ class RandomCartPoleEnv(RandomEnv):
         to move the cart underneath it
 
     Reward:
-        Reward is 1 for every step taken, including the termination step
+        vanilla: Reward is 1 for every step taken, including the termination step
+        inverted: Reward is -(theta^2 + 0.1*theta_dot^2 + 0.001*theta_acc^2)
 
     Starting State:
-        All observations are assigned a uniform random value in [-0.05..0.05]
+        vanilla: All observations are assigned a uniform random value in [-0.05..0.05]
+        inverted: obs in [-0.05, 0.05], except for theta [-pi-0.05, -pi+0.05]
+                  (pole hanging at the bottom)
 
     Episode Termination:
-        Pole Angle is more than 12 degrees.
-        Cart Position is more than 2.4 (center of the cart reaches the edge of
-        the display).
-        Episode length is greater than 200.
-        Solved Requirements:
-        Considered solved when the average return is greater than or equal to
-        195.0 over 100 consecutive trials.
+        vanilla:
+            Pole Angle is more than 12 degrees.
+            Cart Position is more than 2.4 (center of the cart reaches the edge of
+            the display).
+            Episode length is greater than 200.
+        inverted:
+            Cart Position is more than 2.4 (center of the cart reaches the edge of
+            the display).
+            Episode length is greater than 200.
+    
+    Solved Requirements: 
+        vanilla: Considered solved when the average return is greater than or equal to
+                 195.0 over 100 consecutive trials.
+
+    Randomized dynamics:
+        Gravity, Cart mass, Pole mass, Pole length
+        4 parameters.
     """
 
     metadata = {
@@ -68,8 +87,17 @@ class RandomCartPoleEnv(RandomEnv):
         'video.frames_per_second': 50
     }
 
-    def __init__(self):
+    def __init__(self,
+                 inverted=False):
+        """
+        
+            inverted: bool
+                      If set, the task is an inverted cartpole pendulum
+                      which starts in vertical position towards the bottom.
+        """
         RandomEnv.__init__(self)
+
+        self.inverted = inverted
 
         self.gravity = 9.8
         self.cart_mass = 1.0
@@ -81,20 +109,34 @@ class RandomCartPoleEnv(RandomEnv):
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = 'euler'
 
-        # Angle at which to fail the episode
-        self.theta_threshold_radians = 12 * 2 * math.pi / 360
+        # Cart pos at which to fail the episode
         self.x_threshold = 2.4
 
-        # Angle limit set to 2 * theta_threshold_radians so failing observation
-        # is still within bounds.
-        high = np.array([self.x_threshold * 2,
-                         np.finfo(np.float32).max,
-                         self.theta_threshold_radians * 2,
-                         np.finfo(np.float32).max],
-                        dtype=np.float32)
+
+        if not self.inverted:
+            # Angle at which to fail the episode
+            self.theta_threshold_radians = 12 * 2 * math.pi / 360
+            
+            # Angle limit set to 2 * theta_threshold_radians so failing observation
+            # is still within bounds.
+            high = np.array([self.x_threshold * 2,  # x
+                             np.finfo(np.float32).max,  # x_dot
+                             self.theta_threshold_radians * 2,  # theta
+                             np.finfo(np.float32).max],  # theta_dot
+                            dtype=np.float32)
+
+            self.observation_space = spaces.Box(-high, high, dtype=np.float32)
+        else:
+            high = np.array([self.x_threshold * 2,  # x
+                             np.finfo(np.float32).max,  # x_dot
+                             1,  # cos(theta)
+                             1,  # sin(theta)
+                             np.finfo(np.float32).max],  # theta_dot
+                            dtype=np.float32)
+
+            self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self.seed()
         self.viewer = None
@@ -111,13 +153,18 @@ class RandomCartPoleEnv(RandomEnv):
                                 self.pole_mass,
                                 self.pole_length
                             ])
+        self.nominal_values = np.copy(self.original_task)
+
         self.task_dim = self.original_task.shape[0]
         self.min_task = np.zeros(self.task_dim)
         self.max_task = np.zeros(self.task_dim)
         self.mean_task = np.zeros(self.task_dim)
         self.stdev_task = np.zeros(self.task_dim)
 
-        self.reward_threshold = 500
+        if self.inverted:
+            self.reward_threshold = 0
+        else:
+            self.reward_threshold = 500
 
 
     def get_search_bounds_mean(self, index):
@@ -170,6 +217,7 @@ class RandomCartPoleEnv(RandomEnv):
         return [seed]
 
     def step(self, action):
+        info = {}
         err_msg = "%r (%s) invalid" % (action, type(action))
         assert self.action_space.contains(action), err_msg
 
@@ -197,36 +245,83 @@ class RandomCartPoleEnv(RandomEnv):
 
         self.state = (x, x_dot, theta, theta_dot)
 
-        done = bool(
-            x < -self.x_threshold
-            or x > self.x_threshold
-            or theta < -self.theta_threshold_radians
-            or theta > self.theta_threshold_radians
-        )
-
-        if not done:
-            reward = 1.0
-        elif self.steps_beyond_done is None:
-            # Pole just fell!
-            self.steps_beyond_done = 0
-            reward = 1.0
+        ### Done
+        if self.inverted:
+            done = bool(
+                    x < -self.x_threshold or
+                    x > self.x_threshold
+            )
         else:
-            if self.steps_beyond_done == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned done = True. You "
-                    "should always call 'reset()' once you receive 'done = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_done += 1
-            reward = 0.0
+            done = bool(
+                x < -self.x_threshold
+                or x > self.x_threshold
+                or theta < -self.theta_threshold_radians
+                or theta > self.theta_threshold_radians
+            )
+        
 
-        return np.array(self.state), reward, done, {}
+        ### Reward
+        if self.inverted:
+            reward = - (self.angle_normalize(theta)**2  +  0.1*theta_dot**2  +  0.001*(thetaacc**2))
+
+            # if x < -self.x_threshold or x > self.x_threshold:  # penalty for early termination
+            #     reward -= 1000
+
+            if not done:  # alive bonus
+                reward += 2
+            elif self.steps_beyond_done is None:
+                reward -= 50
+                self.steps_beyond_done = 0
+            else:
+                reward = 0
+                self.steps_beyond_done += 1
+
+            info['norm_theta'] = self.angle_normalize(theta)
+        else:
+            if not done:
+                reward = 1.0
+            elif self.steps_beyond_done is None:
+                # Pole just fell!
+                self.steps_beyond_done = 0
+                reward = 1.0
+            else:
+                if self.steps_beyond_done == 0:
+                    logger.warn(
+                        "You are calling 'step()' even though this "
+                        "environment has already returned done = True. You "
+                        "should always call 'reset()' once you receive 'done = "
+                        "True' -- any further steps are undefined behavior."
+                    )
+                self.steps_beyond_done += 1
+                reward = 0.0
+
+        info['theta'] = theta
+        info['theta_dot'] = theta_dot
+        info['theta_acc'] = thetaacc
+
+        return self._get_obs(), reward, done, info
+
+    def angle_normalize(self, th):
+        return ((th + np.pi) % (2 * np.pi)) - np.pi
+
+    def _get_obs(self):
+        if self.inverted:
+            x, x_dot, theta, theta_dot = self.state
+            return np.array([x, x_dot, math.cos(theta), math.sin(theta), theta_dot], dtype=np.float32)
+        else:
+            return np.array(self.state)
 
     def reset(self):
-        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+        if self.inverted:
+            # x, x_dot, theta, theta_dot
+            all_but_theta = tuple(self.np_random.uniform(low=-0.05, high=0.05, size=(3,)))  # x, x_dot, theta_dot
+            theta = self.np_random.uniform(low=-np.pi-0.05, high=-np.pi+0.05)  # theta
+            self.state = all_but_theta[0], all_but_theta[1], theta, all_but_theta[2]
+        else:
+            self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
         self.steps_beyond_done = None
-        return np.array(self.state)
+
+        return self._get_obs()
 
     def render(self, mode='human'):
         screen_width = 600
@@ -293,5 +388,12 @@ gym.envs.register(
     entry_point="%s:RandomCartPoleEnv" % __name__,
     max_episode_steps=500,
     kwargs={}
+)
+
+gym.envs.register(
+    id="RandomInvertedCartPole-v0",
+    entry_point="%s:RandomCartPoleEnv" % __name__,
+    max_episode_steps=500,
+    kwargs={"inverted": True}
 )
 
