@@ -264,18 +264,6 @@ class RandomCartPoleEnv(RandomEnv):
         if self.inverted:
             reward = - (self.angle_normalize(theta)**2  +  0.1*theta_dot**2  +  0.001*(thetaacc**2))
 
-            # if x < -self.x_threshold or x > self.x_threshold:  # penalty for early termination
-            #     reward -= 1000
-
-            # if not done:  # alive bonus
-            #     reward += 5
-            # elif self.steps_beyond_done is None:
-            #     reward -= 100
-            #     self.steps_beyond_done = 0
-            # else:
-            #     reward = 0
-            #     self.steps_beyond_done += 1
-
             if not done:
                 reward += 10  # positive reward encourages the agent to atleast stay alive
             elif self.steps_beyond_done is None:  # done just turned True
