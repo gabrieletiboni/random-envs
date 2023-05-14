@@ -187,7 +187,7 @@ class RandomCartPoleEnv(RandomEnv):
         else:
             self.reward_threshold = 500
 
-        self.preferred_lr = 0.0005 # --algo Sac -t 5M
+        self.preferred_lr = 0.0005
 
 
     def get_search_bounds_mean(self, index):
