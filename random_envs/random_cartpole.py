@@ -21,6 +21,9 @@ class RandomCartPoleEnv(RandomEnv):
         prevent it from falling over by increasing and reducing the cart's
         velocity.
 
+        Augmented with Domain Randomization capabilities (see `Randomized
+        Dynamics` below).
+
     Source:
         This environment corresponds to the version of the cart-pole problem
         described by Barto, Sutton, and Anderson
@@ -43,10 +46,15 @@ class RandomCartPoleEnv(RandomEnv):
             4       Pole Angular Velocity     -Inf                    Inf
 
     Actions:
-        Type: Discrete(2)
-        Num   Action
-        0     Push cart to the left
-        1     Push cart to the right
+        continuous_action=False
+            Type: Discrete(2)
+            Num   Action
+            0     Push cart to the left
+            1     Push cart to the right
+        continuous_action=True
+            Type: Box(1)
+            Num   Action                      Min                     Max
+            0     Normalized torque           -1                      1
 
         Note: The amount the velocity that is reduced or increased is not
         fixed; it depends on the angle the pole is pointing. This is because
@@ -88,12 +96,16 @@ class RandomCartPoleEnv(RandomEnv):
     }
 
     def __init__(self,
-                 inverted=False):
+                 inverted=False,
+                 continuous_action=False):
         """
-        
             inverted: bool
                       If set, the task is an inverted cartpole pendulum
                       which starts in vertical position towards the bottom.
+
+            continuous_action: bool
+                               actions in range [-1, 1] are expected, which
+                               get translated to forces exerted on the cart.
         """
         RandomEnv.__init__(self)
 
@@ -113,6 +125,7 @@ class RandomCartPoleEnv(RandomEnv):
         self.x_threshold = 2.4
 
 
+        ### Observation space
         if not self.inverted:
             # Angle at which to fail the episode
             self.theta_threshold_radians = 12 * 2 * math.pi / 360
@@ -136,13 +149,21 @@ class RandomCartPoleEnv(RandomEnv):
 
             self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
-        self.action_space = spaces.Discrete(2)
+
+        ### Action space
+        self.continuous_action = continuous_action
+        if self.continuous_action:
+            self.action_space = spaces.Box(-1, 1, shape=(1,), dtype=np.float32)
+        else:
+            self.action_space = spaces.Discrete(2)
 
         self.seed()
         self.viewer = None
         self.state = None
         self.steps_beyond_done = None
 
+
+        ### Domain randomization
         self.dyn_ind_to_name = {0: 'gravity',
                                 1: 'cart_mass',
                                 2: 'pole_mass',
@@ -221,8 +242,14 @@ class RandomCartPoleEnv(RandomEnv):
         err_msg = "%r (%s) invalid" % (action, type(action))
         assert self.action_space.contains(action), err_msg
 
+        assert action <= 1 and action >= -1
+        if self.continuous_action:
+            # Scale action to force boundaries
+            force = action[0] * self.force_mag
+        else:
+            force = self.force_mag if action == 1 else -self.force_mag
+
         x, x_dot, theta, theta_dot = self.state
-        force = self.force_mag if action == 1 else -self.force_mag
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
 
@@ -395,5 +422,12 @@ gym.envs.register(
     entry_point="%s:RandomCartPoleEnv" % __name__,
     max_episode_steps=500,
     kwargs={"inverted": True}
+)
+
+gym.envs.register(
+    id="RandomContinuousInvertedCartPole-v0",
+    entry_point="%s:RandomCartPoleEnv" % __name__,
+    max_episode_steps=500,
+    kwargs={"inverted": True, "continuous_action": True}
 )
 
