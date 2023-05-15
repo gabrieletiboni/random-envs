@@ -22,6 +22,9 @@ class RandomEnv(gym.Env):
         self.reward_threshold = None
         self.dyn_ind_to_name = None
 
+        self.expose_dr_sampler = False
+        self.dr_sampler = []
+
     
     # Methods to override in child envs:
     # ----------------------------
@@ -47,8 +50,15 @@ class RandomEnv(gym.Env):
     # ----------------------------
 
     def set_random_task(self):
-        """Sample and set random parameters"""
-        self.set_task(*self.sample_task())
+        """Sample and set random parameters
+            
+            Optionally keeps track of the sampled
+            random parameters.
+        """
+        task = self.sample_task()
+        if self.expose_dr_sampler:
+            self.dr_sampler.append(task)
+        self.set_task(*task)
 
     def set_dr_training(self, flag):
         """
@@ -59,6 +69,15 @@ class RandomEnv(gym.Env):
 
     def get_dr_training(self):
         return self.dr_training
+
+    def set_expose_dr_sampler(self, flag):
+        self.expose_dr_sampler = flag
+
+    def reset_dr_sampler(self):
+        self.dr_sampler = []
+
+    def get_dr_sampler(self):
+        return self.dr_sampler
 
     def set_endless(self, flag):
         """
