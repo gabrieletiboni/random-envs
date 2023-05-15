@@ -115,7 +115,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.stdev_task = np.zeros(self.task_dim)
 
         if self.norm_reward:
-            self.reward_threshold = 300
+            self.reward_threshold = 150
         else:
             self.reward_threshold = 2500
 
