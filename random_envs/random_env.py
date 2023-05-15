@@ -3,6 +3,8 @@ import pdb
 
 import gym
 import numpy as np
+import torch
+from torch.distributions.beta import Beta
 
 class RandomEnv(gym.Env):
     """Superclass for all environments
@@ -85,10 +87,11 @@ class RandomEnv(gym.Env):
             Set a DR distribution
 
             dr_type : str
-                      {uniform, truncnorm, gaussian, fullgaussian}
+                      {uniform, truncnorm, gaussian, fullgaussian, beta}
 
             distr : list of distr parameters, or dict for full gaussian
         """
+        self.sampling = dr_type
         if dr_type == 'uniform':
             self._set_udr_distribution(distr)
         elif dr_type == 'truncnorm':
@@ -97,6 +100,8 @@ class RandomEnv(gym.Env):
             self._set_gaussian_distribution(distr)
         elif dr_type == 'fullgaussian':
             self._set_fullgaussian_distribution(distr['mean'], distr['cov'])
+        elif dr_type == 'beta':
+            self._set_beta_distribution(distr)
         else:
             raise Exception('Unknown dr_type:'+str(dr_type))
 
@@ -107,35 +112,50 @@ class RandomEnv(gym.Env):
             return self.mean_task, self.stdev_task
         elif self.sampling == 'gaussian':
             raise ValueError('Not implemented')
+        elif self.sampling == 'beta':
+            return self.distr
         else:
             return None
 
     def _set_udr_distribution(self, bounds):
-        self.sampling = 'uniform'
         for i in range(len(bounds)//2):
             self.min_task[i] = bounds[i*2]
             self.max_task[i] = bounds[i*2 + 1]
         return
 
     def _set_truncnorm_distribution(self, bounds):
-        self.sampling = 'truncnorm'
         for i in range(len(bounds)//2):
             self.mean_task[i] = bounds[i*2]
             self.stdev_task[i] = bounds[i*2 + 1]
         return
 
     def _set_gaussian_distribution(self, bounds):
-        self.sampling = 'gaussian'
         for i in range(len(bounds)//2):
             self.mean_task[i] = bounds[i*2]
             self.stdev_task[i] = bounds[i*2 + 1]
         return
 
     def _set_fullgaussian_distribution(self, mean, cov):
-        self.sampling = 'fullgaussian'
         self.mean_task[:] = mean
         self.cov_task = np.copy(cov)
         return
+
+    def _set_beta_distribution(self, distr):
+        """
+            distr: list of dict
+                       list of independent beta distributions.
+                       4 keys per dimensions are expected:
+                        m=min, M=max, a, b
+
+                    Y ~ Beta(a,b,m,M)
+                    y = x(M-m) + m
+                    f(y) = f_x((y-m)/(M-m))/(M-m)
+        """
+        self.distr = distr.copy()
+        self.to_distr = []
+        for i in range(len(self.distr)):
+            self.to_distr.append(Beta(torch.tensor(distr[i]['a'], dtype=torch.float32), torch.tensor(distr[i]['b'], dtype=torch.float32)))
+
 
     def set_task_search_bounds(self):
         """Sets the parameter search bounds based on how they are specified in get_search_bounds_mean"""
@@ -210,6 +230,14 @@ class RandomEnv(gym.Env):
             sample = self.denormalize_parameters(sample)
             return sample
 
+        elif self.sampling == 'beta':
+            sample = []
+            for i in range(len(self.distr)):
+                m, M = self.distr[i]['m'], self.distr[i]['M']
+                value = self.to_distr[i].sample()*(M - m) + m
+                sample.append(value.item())
+
+            return np.array(sample)
         else:
             raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr.')
 
