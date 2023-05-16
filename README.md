@@ -71,6 +71,7 @@ See `train_random_envs.py` in [this repo](https://github.com/gabrieletiboni/sb3-
 - If having trouble while installing mujoco-py, see [#627](https://github.com/openai/mujoco-py/issues/627) to install all dependencies through conda.
 - If installation goes wrong due to gym==0.21 as `error in gym setup command: 'extras_require'`, see https://github.com/openai/gym/issues/3176. There is a problem with the version of setuptools.
 - if you get a `cannot find -lGL` error when importing mujoco_py for the first time (it could also be that it does it again on the cluster nodes), then have a look at my solution in [#763](https://github.com/openai/mujoco-py/issues/763#issuecomment-1519090452)
+- if you get a `fatal error: GL/osmesa.h: No such file or directory` error, make sure you export the CPATH variable as mentioned in mujoco-py[#627](https://github.com/openai/mujoco-py/issues/627)
 
 ## Citing
 If you use this repository, please consider citing
