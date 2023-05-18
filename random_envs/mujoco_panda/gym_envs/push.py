@@ -850,8 +850,6 @@ for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
         for task_reward in task_rewards:
             for i, random_goal in enumerate(random_goals):
-                print('center:', (random_goal[0]+random_goal[1])/2)
-                print('sizes:', np.array([(random_goal[1][0]-random_goal[0][0])/2, (random_goal[1][1]-random_goal[0][1])/2]))
                 register_panda_env(
                         id=f"PandaPush-PosCtrl-RandGoal{i}-{dyn_type}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
                         entry_point="%s:PandaPushEnv" % __name__,
