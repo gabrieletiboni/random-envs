@@ -1,6 +1,7 @@
 {% extends "base_scene.xml" %}
 
 {% set with_goal=with_goal | default(False) %}
+{% set display_goal_range=display_goal_range | default(False) %}
 {% set table_length=table_length | default(1.89) %}
 {% set table_width=table_width | default(0.8) %}
 {% set table_height=table_height | default(0.75) %}
@@ -17,6 +18,7 @@
     {{ super() }}
     <material name="dark" rgba="0.106 0.125 0.129 1" specular="0.2"/>
     <material name="table_top" rgba=".867 .894 .89 1" specular=".1" shininess="0.1"/>
+    <material name="purple" rgba=".38 0 0.43 0.2"/>
 {% endblock %}
 
 {% block worldbody %}
@@ -35,7 +37,14 @@
 
     {% if with_goal %}
     {% set goal_marker_size=goal_marker_size | default(0.02) %}
-    <site name="goal" pos="1.0 0 {{ table_height + table_thickness/2 + goal_marker_size}}" size="{{goal_marker_size}}" material="red_target" />
+    <!-- <site name="goal" pos="1.0 0 {{ table_height + table_thickness/2 + goal_marker_size}}" size="{{goal_marker_size}}" material="red_target" /> -->
+    <geom material="green_target" name="goal" pos="1.0 0 {{ table_height + table_thickness/2 + 0.005}}" size="{{goal_marker_size}} .001" solref="0.1 0.1" type="cylinder" contype="0" conaffinity="0" />
+    {% endif %}
+
+    {% if display_goal_range %}
+    {% set goal_range_center=goal_range_center %}
+    {% set goal_range_size=goal_range_size %}
+    <geom material="purple" name="target_range" pos="{{ goal_range_center[0] }} {{ goal_range_center[1] }} {{ table_height + table_thickness/2 + 0.001}}" size="{{ goal_range_size[0] }} {{ goal_range_size[1] }} .125" solref="0.1 0.1" type="plane" contype="0" conaffinity="0" />
     {% endif %}
 {% endblock %}
 

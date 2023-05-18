@@ -369,8 +369,8 @@ class PandaPushEnv(PandaGymEnvironment):
 
     def set_random_goal(self):
         goal = np.random.uniform(self.goal_low, self.goal_high)
-        goal_site_id = self.sim.model.site_name2id("goal")
-        self.sim.model.site_pos[goal_site_id][:2] = goal
+        goal_site_id = self.sim.model.geom_name2id("goal")
+        self.sim.model.geom_pos[goal_site_id][:2] = goal
 
     def reset(self):
         # Sample new dynamics and re_build model if necessary
@@ -800,6 +800,7 @@ randomized_dynamics = ['mf', 'mft', 'mfcom', 'com', 'comy', 'mftcom', 'mfcomd', 
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 
+
 for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
         for task_reward in task_rewards:
@@ -834,6 +835,61 @@ for dyn_type in randomized_dynamics:
                                   "randomized_dynamics": dyn_type
                         }
                     )
+
+
+
+"""
+    Random goal envs
+"""
+random_goals = [
+                    (np.array([0.6, -0.2]), np.array([0.75, 0.2])),  # Goal range 0
+              
+               ]
+
+for dyn_type in randomized_dynamics:
+    for norm_reward in norm_reward_bool:
+        for task_reward in task_rewards:
+            for i, random_goal in enumerate(random_goals):
+                print('center:', (random_goal[0]+random_goal[1])/2)
+                print('sizes:', np.array([(random_goal[1][0]-random_goal[0][0])/2, (random_goal[1][1]-random_goal[0][1])/2]))
+                register_panda_env(
+                        id=f"PandaPush-PosCtrl-RandGoal{i}-{dyn_type}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                        entry_point="%s:PandaPushEnv" % __name__,
+                        model_file="franka_box.xml",
+                        controller=JointPositionController,
+                        controller_kwargs = {"clip_acceleration": False},
+                        action_interpolator=QuadraticInterpolator,
+                        action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                                            "start_vel": env_field("joint_vel"),
+                                            "dt": env_field("sim_dt")},
+                        model_args = {"actuator_type": "torque",
+                                      "with_goal": True,
+                                      "display_goal_range": True,
+                                      "goal_range_center": (random_goal[0]+random_goal[1])/2,
+                                      "goal_range_size": np.array([(random_goal[1][0]-random_goal[0][0])/2, (random_goal[1][1]-random_goal[0][1])/2]),
+                                      "finger_type": "3dprinted",
+                                      "reduce_damping": True,
+                                      "limit_ctrl": False,
+                                      "limit_force": False,
+                                      "init_joint_pos": panda_start_jpos},
+                        max_episode_steps=300,
+                        env_kwargs = {"command_type": "acc",
+                                      "limit_power": 4,
+                                      "contact_penalties": True,
+                                      "control_penalty_coeff": 0.5,
+                                      "task_reward": task_reward,
+                                      "norm_reward": norm_reward,
+                                      "goal_low": random_goal[0],
+                                      "goal_high": random_goal[1],
+                                      "init_jpos_jitter": 0.,
+                                      "rotation_in_obs": "sincosz",
+                                      "randomized_dynamics": dyn_type
+                            }
+                        )
+
+##################################
+
+
 
 
 register_panda_env(

@@ -3,6 +3,7 @@
 
 <!-- If the default values are changed, the corresponding get_default_task() method has to be changed accordingly -->
 {% set with_goal=with_goal | default(False) %}
+{% set display_goal_range=display_goal_range | default(False) %}
 {% set box_com=box_com | default("0.0 0.0 0.0") %}
 {% set box_mass=box_mass | default(0.8) %}
 {% set box_inertia=box_inertia | default("0.00075 0.00075 0.00075") %}

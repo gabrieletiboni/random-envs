@@ -12,6 +12,7 @@
             <texture name="yellow_black_checker" type="2d" builtin="checker" rgb1="1 1 0" rgb2=".0 .0 .0" width="512" height="512"/>
             <material name="checker_material" texture="yellow_black_checker" rgba="1 1 1 {{ box_transparency }}" texrepeat="1 1" texuniform="true" />
             <material name="red_target" rgba="0.847 0.066 0.349 1"/>
+            <material name="green_target" rgba="0.220 0.557 0.235 1"/>
             <material name="yellow" rgba="0.941 0.784 0.031 1"/>
             <material name="green" rgba="0.161 0.749 0.071 1"/>
             <material name="orange" rgba="0.929 0.49 0.227 1" specular="0.2"/>
