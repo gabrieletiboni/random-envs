@@ -843,7 +843,7 @@ for dyn_type in randomized_dynamics:
 """
 random_goals = [
                     (np.array([0.6, -0.2]), np.array([0.75, 0.2])),  # Goal range 0
-              
+                    (np.array([0.74.9, -0.01]), np.array([0.75, 0.01])) # Goal range 1
                ]
 
 for dyn_type in randomized_dynamics:
