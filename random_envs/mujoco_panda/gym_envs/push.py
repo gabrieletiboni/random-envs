@@ -414,7 +414,7 @@ class PandaPushEnv(PandaGymEnvironment):
         """Sets the center of mass of the hockey puck
             :param value: x,y,z list of new CoM offset w.r.t.
                           to geometric center
-                          Value can also be [x,y] o [y].
+                          Value can also be [x,y] or [y].
         """
         assert isinstance(value, list) or isinstance(value, np.ndarray)
 
@@ -451,7 +451,7 @@ class PandaPushEnv(PandaGymEnvironment):
             raise ValueError(f"The task given is not compatible with the dyn type selected. dyn_type:{self.dyn_type} - task:{task}")
         
         task = np.array(task)
-        self._current_task = task
+        self._current_task = np.array(task)
 
         if self.dyn_type == 'mf':
             self.set_box_mass(self,task[0])
@@ -463,6 +463,14 @@ class PandaPushEnv(PandaGymEnvironment):
 
         elif self.dyn_type == 'mfcom':
             self.set_box_com(self, task[3:5])
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(self, task[0])
+            self.set_puck_friction(self, task[1:3])
+
+        elif self.dyn_type == 'mfcomy':
+            self.set_box_com(self, task[3:4])
             if self._needs_rebuilding:
                 self._rebuild_model(self)
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
@@ -517,6 +525,8 @@ class PandaPushEnv(PandaGymEnvironment):
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
         elif dyn_type == 'mfcom':  # mass + friction + CoM
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comx', 4: 'comy'}
+        elif dyn_type == 'mfcomy':  # mass + friction + CoMy
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comy'}
         elif dyn_type == 'com':  # CoM
             self.dyn_ind_to_name = {0: 'comx', 1: 'comy'}
         elif dyn_type == 'comy':  # CoM
@@ -796,7 +806,7 @@ register_panda_env(
         )
 
 
-randomized_dynamics = ['mf', 'mft', 'mfcom', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
+randomized_dynamics = ['mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 
