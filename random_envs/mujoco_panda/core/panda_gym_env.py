@@ -219,7 +219,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
         :raises: ValueError if the environment does not have a goal pos
         """
         goal_site_id = self.sim.model.geom_name2id("goal")
-        return self.sim.model.site_pos[goal_site_id]
+        return self.sim.model.geom_pos[goal_site_id]
 
     @goal_pos.setter
     def goal_pos(self, value):
@@ -232,7 +232,7 @@ class PandaGymEnvironment(RandomEnv, Environment):
         num_dim = value.shape[0]
         assert num_dim in (2, 3)
         goal_site_id = self.sim.model.geom_name2id("goal")
-        self.sim.model.site_pos[goal_site_id][:num_dim] = value
+        self.sim.model.geom_pos[goal_site_id][:num_dim] = value
 
 
     def reset(self):
