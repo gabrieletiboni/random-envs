@@ -45,6 +45,7 @@ class PandaPushEnv(PandaGymEnvironment):
                  push_prec_alpha=1e-3,
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
+                 box_height_jitter=0.0,
                  rotation_in_obs="none",
                  control_penalty_coeff=1.,
                  randomized_dynamics='mf'):
@@ -53,6 +54,10 @@ class PandaPushEnv(PandaGymEnvironment):
         self.init_box_low = init_box_low
         self.init_box_high = init_box_high
         self.init_box_jitter = init_box_jitter
+        # Optionally add a small jitter to the box height to regularize pushing, i.e
+        # avoid exploiting the edge for pushing
+        self.init_box_size = model_kwargs['box_size'] if 'box_size' in model_kwargs else None
+        self.box_height_jitter = box_height_jitter
         PandaGymEnvironment.__init__(self,
                                      model_file=model_file,
                                      controller=controller,
@@ -412,6 +417,24 @@ class PandaPushEnv(PandaGymEnvironment):
         else:
             raise ValueError("Friction should be a vector of 2 or 5 elements.")
 
+    @randomization_setter("box_size")
+    def set_box_size(self, value: List[float]):
+        """Sets the size of the box dimensions (meters)
+            :param value: new size as HALF the edge lengths
+                          Value can be [x,y,z] or [z].
+        """
+        assert isinstance(value, list) or isinstance(value, np.ndarray)
+
+        if len(value) == 3:
+            # Set all three sizes x,y,z
+            pass
+        elif len(value) == 1:
+            # Set height only (z)
+            value = [self.init_box_size[0], self.init_box_size[1], value[0]]
+
+        self.model_args["box_size"] = list(value)
+        self._needs_rebuilding = True
+
     @randomization_setter("box_com")
     def set_box_com(self, value: List[float]):
         """Sets the center of mass of the hockey puck
@@ -456,64 +479,80 @@ class PandaPushEnv(PandaGymEnvironment):
         task = np.array(task)
         self._current_task = np.array(task)
 
+        if self.box_height_jitter > 0.0:
+            # mujoco expects size as length from center (halved)
+            jitter = np.random.uniform(-self.box_height_jitter, self.box_height_jitter) / 2
+            self.set_box_size(self, [self.init_box_size[2]+jitter])
+
         if self.dyn_type == 'mf':
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
             self.set_box_mass(self,task[0])
             self.set_puck_friction(self, task[1:3])
 
         elif self.dyn_type == 'mft':
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
             self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:4])
 
         elif self.dyn_type == 'mfcom':
             self.set_box_com(self, task[3:5])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:3])
 
         elif self.dyn_type == 'mfcomy':
             self.set_box_com(self, task[3:4])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:3])
 
         elif self.dyn_type == 'com':
             self.set_box_com(self, task[:])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
 
         elif self.dyn_type == 'comy':
             self.set_box_com(self, task[:])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
 
         elif self.dyn_type == 'mftcom':
             self.set_box_com(self, task[4:6])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:4])
 
         elif self.dyn_type == 'mfcomd':
             self.set_box_com(self, task[3:5])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model(self)
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(self, task[0])
             self.set_puck_friction(self, task[1:3])
             self.set_joint_dampings(task[5:12])
 
         elif self.dyn_type == 'd':
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            if self._needs_rebuilding:
+                self._rebuild_model(self)
             self.set_joint_dampings(task[:7])
 
         else:
             raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
+
+
 
         return
 
@@ -794,7 +833,8 @@ register_panda_env(
                       "reduce_damping": True,
                       "limit_ctrl": False,
                       "limit_force": False,
-                      "init_joint_pos": panda_start_jpos},
+                      "init_joint_pos": panda_start_jpos,
+                      "box_size": [0.05, 0.05, 0.04]},
         max_episode_steps=300,
         env_kwargs = {"command_type": "acc",
                       "limit_power": 4,
@@ -804,7 +844,8 @@ register_panda_env(
                       "goal_low": fixed_push_goal_a,
                       "goal_high": fixed_push_goal_a,
                       "init_jpos_jitter": 0.,
-                      "rotation_in_obs": "sincosz"
+                      "rotation_in_obs": "sincosz",
+                      "box_height_jitter": 0.
             }
         )
 
@@ -814,44 +855,48 @@ norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]
 init_box_jitters = [0.0, 0.01]
+box_height_jitters = [0.0, 0.005]
 
 for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
         for task_reward in task_rewards:
             for init_jpos_jitter in init_jpos_jitters:
                 for init_box_jitter in init_box_jitters:
-                    register_panda_env(
-                            id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
-                            entry_point="%s:PandaPushEnv" % __name__,
-                            model_file="franka_box.xml",
-                            controller=JointPositionController,
-                            controller_kwargs = {"clip_acceleration": False},
-                            action_interpolator=QuadraticInterpolator,
-                            action_repeat_kwargs={"start_pos": env_field("joint_pos"),
-                                                "start_vel": env_field("joint_vel"),
-                                                "dt": env_field("sim_dt")},
-                            model_args = {"actuator_type": "torque",
-                                          "with_goal": True,
-                                          "finger_type": "3dprinted",
-                                          "reduce_damping": True,
-                                          "limit_ctrl": False,
-                                          "limit_force": False,
-                                          "init_joint_pos": panda_start_jpos},
-                            max_episode_steps=300,
-                            env_kwargs = {"command_type": "acc",
-                                          "limit_power": 4,
-                                          "contact_penalties": True,
-                                          "control_penalty_coeff": 0.5,
-                                          "task_reward": task_reward,
-                                          "norm_reward": norm_reward,
-                                          "goal_low": fixed_push_goal_a,
-                                          "goal_high": fixed_push_goal_a,
-                                          "init_jpos_jitter": init_jpos_jitter,
-                                          "init_box_jitter": init_box_jitter,
-                                          "rotation_in_obs": "sincosz",
-                                          "randomized_dynamics": dyn_type
-                                }
-                            )
+                    for box_height_jitter in box_height_jitters:
+                        register_panda_env(
+                                id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                                entry_point="%s:PandaPushEnv" % __name__,
+                                model_file="franka_box.xml",
+                                controller=JointPositionController,
+                                controller_kwargs = {"clip_acceleration": False},
+                                action_interpolator=QuadraticInterpolator,
+                                action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                                                    "start_vel": env_field("joint_vel"),
+                                                    "dt": env_field("sim_dt")},
+                                model_args = {"actuator_type": "torque",
+                                              "with_goal": True,
+                                              "finger_type": "3dprinted",
+                                              "reduce_damping": True,
+                                              "limit_ctrl": False,
+                                              "limit_force": False,
+                                              "init_joint_pos": panda_start_jpos,
+                                              "box_size": [0.05, 0.05, 0.04]},
+                                max_episode_steps=300,
+                                env_kwargs = {"command_type": "acc",
+                                              "limit_power": 4,
+                                              "contact_penalties": True,
+                                              "control_penalty_coeff": 0.5,
+                                              "task_reward": task_reward,
+                                              "norm_reward": norm_reward,
+                                              "goal_low": fixed_push_goal_a,
+                                              "goal_high": fixed_push_goal_a,
+                                              "init_jpos_jitter": init_jpos_jitter,
+                                              "init_box_jitter": init_box_jitter,
+                                              "box_height_jitter": box_height_jitter,
+                                              "rotation_in_obs": "sincosz",
+                                              "randomized_dynamics": dyn_type
+                                    }
+                                )
 
 
 
