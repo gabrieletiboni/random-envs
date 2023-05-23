@@ -199,6 +199,9 @@ class JointPositionController(PIDController, TorqueController):
         kp = np.array([1e3, 1e3, 1e3, 1e3, 1e2, 1e2, 1e2])
         ki = np.array([1e4, 1e4, 1e4, 1e4, 1e3, 1e3, 1e3])
         kd = np.array([1e3, 1e3, 1e3, 1e3, 1e2, 1e2, 1e2])
+        # kp = np.array([600, 600, 600, 600, 250, 150, 50])
+        # ki = np.array([0, 0, 0, 0, 0, 0, 0])
+        # kd = np.array([30, 30, 30, 30, 10, 10, 5])
         super().__init__(sim, kp, ki, kd)
         self.kp, self.ki, self.kd = kp, ki, kd
         self.clip_position = clip_position
