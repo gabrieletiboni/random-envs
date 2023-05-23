@@ -41,6 +41,7 @@ class PandaPushEnv(PandaGymEnvironment):
                  goal_high=np.array([1.2, .3]),
                  init_box_low=np.array([0.51, 0]),
                  init_box_high=np.array([0.51, 0.]),
+                 init_box_jitter=0.0,
                  push_prec_alpha=1e-3,
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
@@ -51,6 +52,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.goal_high = goal_high
         self.init_box_low = init_box_low
         self.init_box_high = init_box_high
+        self.init_box_jitter = init_box_jitter
         PandaGymEnvironment.__init__(self,
                                      model_file=model_file,
                                      controller=controller,
@@ -379,7 +381,8 @@ class PandaPushEnv(PandaGymEnvironment):
 
         super().reset()
         self.set_random_goal()
-        start_pos = np.random.uniform(self.init_box_low, self.init_box_high)
+        start_pos = np.random.uniform(self.init_box_low, self.init_box_high) + \
+                    np.random.uniform([-self.init_box_jitter, -self.init_box_jitter], [self.init_box_jitter, self.init_box_jitter])
         self.puck_pos = start_pos
         return self.get_observation()
 
@@ -809,42 +812,46 @@ register_panda_env(
 randomized_dynamics = ['mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
-
+init_jpos_jitters = [0.0, 0.02]
+init_box_jitters = [0.0, 0.01]
 
 for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
         for task_reward in task_rewards:
-            register_panda_env(
-                    id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
-                    entry_point="%s:PandaPushEnv" % __name__,
-                    model_file="franka_box.xml",
-                    controller=JointPositionController,
-                    controller_kwargs = {"clip_acceleration": False},
-                    action_interpolator=QuadraticInterpolator,
-                    action_repeat_kwargs={"start_pos": env_field("joint_pos"),
-                                        "start_vel": env_field("joint_vel"),
-                                        "dt": env_field("sim_dt")},
-                    model_args = {"actuator_type": "torque",
-                                  "with_goal": True,
-                                  "finger_type": "3dprinted",
-                                  "reduce_damping": True,
-                                  "limit_ctrl": False,
-                                  "limit_force": False,
-                                  "init_joint_pos": panda_start_jpos},
-                    max_episode_steps=300,
-                    env_kwargs = {"command_type": "acc",
-                                  "limit_power": 4,
-                                  "contact_penalties": True,
-                                  "control_penalty_coeff": 0.5,
-                                  "task_reward": task_reward,
-                                  "norm_reward": norm_reward,
-                                  "goal_low": fixed_push_goal_a,
-                                  "goal_high": fixed_push_goal_a,
-                                  "init_jpos_jitter": 0.,
-                                  "rotation_in_obs": "sincosz",
-                                  "randomized_dynamics": dyn_type
-                        }
-                    )
+            for init_jpos_jitter in init_jpos_jitters:
+                for init_box_jitter in init_box_jitters:
+                    register_panda_env(
+                            id=f"PandaPush-PosCtrl-GoalA-{dyn_type}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                            entry_point="%s:PandaPushEnv" % __name__,
+                            model_file="franka_box.xml",
+                            controller=JointPositionController,
+                            controller_kwargs = {"clip_acceleration": False},
+                            action_interpolator=QuadraticInterpolator,
+                            action_repeat_kwargs={"start_pos": env_field("joint_pos"),
+                                                "start_vel": env_field("joint_vel"),
+                                                "dt": env_field("sim_dt")},
+                            model_args = {"actuator_type": "torque",
+                                          "with_goal": True,
+                                          "finger_type": "3dprinted",
+                                          "reduce_damping": True,
+                                          "limit_ctrl": False,
+                                          "limit_force": False,
+                                          "init_joint_pos": panda_start_jpos},
+                            max_episode_steps=300,
+                            env_kwargs = {"command_type": "acc",
+                                          "limit_power": 4,
+                                          "contact_penalties": True,
+                                          "control_penalty_coeff": 0.5,
+                                          "task_reward": task_reward,
+                                          "norm_reward": norm_reward,
+                                          "goal_low": fixed_push_goal_a,
+                                          "goal_high": fixed_push_goal_a,
+                                          "init_jpos_jitter": init_jpos_jitter,
+                                          "init_box_jitter": init_box_jitter,
+                                          "rotation_in_obs": "sincosz",
+                                          "randomized_dynamics": dyn_type
+                                }
+                            )
 
 
 
