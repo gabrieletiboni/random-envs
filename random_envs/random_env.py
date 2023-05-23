@@ -71,6 +71,7 @@ class RandomEnv(gym.Env):
         return self.dr_training
 
     def set_expose_dr_sampler(self, flag):
+        assert isinstance(flag, bool), f'Flag was {flag} instead of boolean'
         self.expose_dr_sampler = flag
 
     def reset_dr_sampler(self):
@@ -173,7 +174,7 @@ class RandomEnv(gym.Env):
         self.distr = distr.copy()
         self.to_distr = []
         for i in range(len(self.distr)):
-            self.to_distr.append(Beta(torch.tensor(distr[i]['a'], dtype=torch.float32), torch.tensor(distr[i]['b'], dtype=torch.float32)))
+            self.to_distr.append(Beta(torch.tensor(self.distr[i]['a'], dtype=torch.float32), torch.tensor(self.distr[i]['b'], dtype=torch.float32)))
 
 
     def set_task_search_bounds(self):
