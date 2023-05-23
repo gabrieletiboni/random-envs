@@ -4,9 +4,13 @@ A pushing environment is implemented with Franka Panda robot.
 ### General notes
 - Controller:
   - low-level robot is controlled at 1000Hz (sim dt = 0.001s)
-  - by default, the policy is queried at 50hz (policy dt = 20ms)
-  - Therefore, the 20 control timesteps in-between each policy query are handled by the action_interpolator (Repeater, LinearInterpolator, QuadraticInterpolator)
-  - the env has a max_episode_steps=500, which translates to 10000 low-level control timesteps of the robot, for a total of 10 seconds.
+  - by default
+  - the policy is queried at 50hz (policy dt = 20ms)
+  - Therefore
+  - the 20 control timesteps in-between each policy query are handled by the action_interpolator (Repeater
+  - LinearInterpolator
+  - QuadraticInterpolator)
+  - the env has a max_episode_steps=300, which translates to 6000 low-level control timesteps of the robot, for a total of 6 seconds.
 
 - Initial state distribution:
   - box: randomly sampled from uniform(`init_box_low`, `init_box_high`)
@@ -40,4 +44,25 @@ A pushing environment is implemented with Franka Panda robot.
   - +2: goal pos (x,y)
 
 ### Gym environments
-- PandaPush-PosCtrl-GoalA-v0
+Available envs are named: `PandaPush-PosCtrl-<Goal>-<DynType>[-InitJpos<val>][-InitBox<val>][-BoxHeight<val>][-Guide][-NormReward]-v0`
+
+- Goal:
+  - `GoalA`
+- DynType:
+  - `mf`  # mass, friction (x,y)
+  - `mft`  # mass, friction (x,y), torsional friction
+  - `mfcom`   # mass, friction (x,y), center of mass (x,y)
+  - `mfcomy`  # mass, friction (x,y), center of mass (y)
+  - `com`  # center of mass (x,y)
+  - `comy`  # center of mass (y)
+  - `mftcom`  # mass, friction (x,y), torsional friction, center of mass (x,y)
+  - `mfcomd`  # mass, friction (x,y), center of mass (x,y), joint dampings 
+  - `d`  # joint dampings
+- InitJPos<val>
+  - val: float, init jpos configuration uniform jitter
+- InitBox<val>
+  - val: float, init box position (x,y) uniform jitter
+- BoxHeight<val>
+  - val: float, box heigh uniform jitter
+- Guide: if set, distance penalty EE-box added as reward term
+- NormReward: if set, normalize reward terms in range ~[0, 1]
