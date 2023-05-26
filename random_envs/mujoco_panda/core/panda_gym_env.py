@@ -8,6 +8,7 @@ import numpy as np
 from random_envs.mujoco_panda.core.env import Environment
 from random_envs.mujoco_panda.core.controllers import Controller, \
                                                       JointPositionController, \
+                                                      FFJointPositionController, \
                                                       CartesianImpedanceController, \
                                                       JointImpedanceController, \
                                                       TorqueController
@@ -154,6 +155,15 @@ class PandaGymEnvironment(RandomEnv, Environment):
             self.preprocess_action = get_preprocess_action(self, command_type)
 
         elif controller == JointPositionController:
+            # Observation is joint pos and vel
+            self._robot_obs_dim = 14
+
+            # Action is desired joint position
+            max_action = np.ones(7)
+            self.robot_observation = lambda : np.concatenate([self.joint_pos, self.joint_vel])
+            self.preprocess_action = get_preprocess_action(self, command_type)
+
+        elif controller == FFJointPositionController:
             # Observation is joint pos and vel
             self._robot_obs_dim = 14
 

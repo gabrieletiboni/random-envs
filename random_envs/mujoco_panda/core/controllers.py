@@ -1,3 +1,5 @@
+import pdb
+
 import numpy as np
 from mujoco_py import functions
 
@@ -219,6 +221,7 @@ class JointPositionController(PIDController, TorqueController):
         des_acc = 2*(command-self.sim.joint_pos-self.sim.dt*self.sim.joint_vel)/self.sim.dt**2
         m_q = self.get_m_q()
         feedforward = m_q @ des_acc
+        # feedforward = 0
 
         # Get the PID control term
         error = command - self.sim.joint_pos
@@ -252,3 +255,81 @@ class JointPositionController(PIDController, TorqueController):
         full_m = full_m_buffer.reshape(model_nv, model_nv)[0:7, 0:7]
         return full_m
 
+
+
+class FFJointPositionController(TorqueController):
+    """
+    Joint position controller with feedforward-term with fixed given desired acceleration.
+
+    This controller uses a feedforward term and a PID control term for corrections
+    """
+    def __init__(self, sim, clip_position=True, clip_acceleration=True):
+        """
+        :param sim: the environment with the robot to control
+        :param clip_position: whether to clip positions to joint limits
+        :param clip_acceleration: whether to clip accelerations to robot limits
+        """
+        super().__init__(sim)
+        # kp = np.array([1e3, 1e3, 1e3, 1e3, 1e2, 1e2, 1e2])
+        # ki = np.array([1e4, 1e4, 1e4, 1e4, 1e3, 1e3, 1e3])
+        # kd = np.array([1e3, 1e3, 1e3, 1e3, 1e2, 1e2, 1e2])
+        kp = np.array([600, 600, 600, 600, 250, 150, 50]) * 1.
+        kd = np.array([50, 50, 50, 20, 20, 20, 10]) * 1.
+        self.kp, self.kd = kp, kd
+        self.clip_position = clip_position
+        self.clip_acceleration = clip_acceleration
+
+    def get_control(self, command):
+        """
+            command: (des_jpos, des_jvel, des_jacc)
+        """
+        des_jpos, des_jvel, des_jacc = command
+
+        if self.clip_position:
+            margin = 3 * np.pi / 180
+            low = self.sim.joint_qpos_min + margin
+            high = self.sim.joint_qpos_max - margin
+            des_jpos = np.clip(des_jpos, low, high)
+        
+        current_pos = self.sim.joint_pos
+        current_vel = self.sim.joint_vel # + np.random.randn(7)*0.0011
+
+        # Get the feedforward term
+        m_q = self.get_m_q()
+        feedforward = m_q @ des_jacc
+
+        # Get the PID control term
+        pid_term = (des_jpos - current_pos) * self.kp + (des_jvel - current_vel) * self.kd
+
+        print('pos error:', des_jpos - current_pos)
+        print('vel error:', des_jvel - current_vel)
+
+        # pdb.set_trace()
+
+        # The control torque is the sum of those terms
+        control = feedforward + pid_term
+
+        if self.clip_acceleration:
+            # Project torque to accelerations using the inverse of M_q
+            ctrl_acc = np.linalg.inv(m_q) @ control
+
+            # Clamp the resulting accelerations to robot limits
+            acc_clamped = np.clip(ctrl_acc, -.99*self.sim.joint_qacc_max, .99*self.sim.joint_qacc_max)
+
+            # Project clamped accelerations to torques with M_q
+            control = m_q @ acc_clamped
+
+        # Add the compensation terms
+        return control + self.gravity_compensation() # control #  self.gravity_compensation()
+
+    def get_m_q(self):
+        """
+        :return: the mass-inertia matrix of the robot (M_q)
+        """
+        model = self.sim.model
+        data = self.sim.sim.data
+        model_nv = model.nv
+        full_m_buffer = np.ndarray((model_nv*model_nv))
+        functions.mj_fullM(model, full_m_buffer, data.qM)
+        full_m = full_m_buffer.reshape(model_nv, model_nv)[0:7, 0:7]
+        return full_m

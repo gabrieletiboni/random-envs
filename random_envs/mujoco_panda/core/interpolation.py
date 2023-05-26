@@ -1,3 +1,5 @@
+import pdb
+
 import numpy as np
 from scipy import interpolate
 
@@ -13,6 +15,28 @@ class Repeater():
     def reset(self):
         return
 
+
+class StatelessAccelerationIntegrator(Repeater):
+    def __init__(self, num, dt):
+        super().__init__(num)
+        self._dt = dt
+
+    def __call__(self, cmd):
+        cur_pos, cur_vel, acc = cmd
+        dt = self.dt
+        env_dt = 0.02
+        for n in range(self.num):
+            t = n * dt
+            target_pos = cur_pos + t * cur_vel + 0.5 * acc * t ** 2
+            target_vel = cur_vel + t * acc
+            yield (target_pos, target_vel, acc)
+
+    @property
+    def dt(self):
+        if callable(self._dt):
+            return self._dt()
+        else:
+            return self._dt
 
 class QuadraticInterpolator(Repeater):
     def __init__(self, num, start_pos, start_vel, dt, command_reference=True):

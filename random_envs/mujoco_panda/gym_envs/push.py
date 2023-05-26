@@ -12,9 +12,10 @@ import random_envs
 from random_envs.mujoco_panda.core.panda_gym_env import PandaGymEnvironment, randomization_setter
 from random_envs.mujoco_panda.core.controllers import Controller, \
                                        JointPositionController, \
+                                       FFJointPositionController, \
                                        JointImpedanceController, \
                                        TorqueController
-from random_envs.mujoco_panda.core.interpolation import Repeater, LinearInterpolator, QuadraticInterpolator
+from random_envs.mujoco_panda.core.interpolation import Repeater, LinearInterpolator, QuadraticInterpolator, StatelessAccelerationIntegrator
 from random_envs.mujoco_panda.core.utils import env_field, register_panda_env, distance_penalty
 
 
@@ -837,6 +838,38 @@ register_panda_env(
                       "box_size": [0.05, 0.05, 0.04]},
         max_episode_steps=300,
         env_kwargs = {"command_type": "acc",
+                      "limit_power": 4,
+                      "contact_penalties": True,
+                      "control_penalty_coeff": 0.5,
+                      "task_reward": "target",
+                      "goal_low": fixed_push_goal_a,
+                      "goal_high": fixed_push_goal_a,
+                      "init_jpos_jitter": 0.,
+                      "rotation_in_obs": "sincosz",
+                      "box_height_jitter": 0.
+            }
+        )
+
+
+### TEST NEW PASCAL JPOSCONTROL ENV
+register_panda_env(
+        id="PandaPush-PosCtrl-GoalA-debug-v0",
+        entry_point="%s:PandaPushEnv" % __name__,
+        model_file="franka_box.xml",
+        controller=FFJointPositionController,
+        controller_kwargs = {"clip_acceleration": False},
+        action_interpolator=StatelessAccelerationIntegrator,
+        action_repeat_kwargs={"dt": env_field("sim_dt")},
+        model_args = {"actuator_type": "torque",
+                      "with_goal": True,
+                      "finger_type": "3dprinted",
+                      "reduce_damping": True,
+                      "limit_ctrl": False,
+                      "limit_force": False,
+                      "init_joint_pos": panda_start_jpos,
+                      "box_size": [0.05, 0.05, 0.04]},
+        max_episode_steps=300,
+        env_kwargs = {"command_type": "acc-debug",
                       "limit_power": 4,
                       "contact_penalties": True,
                       "control_penalty_coeff": 0.5,

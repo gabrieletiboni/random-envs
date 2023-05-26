@@ -1,3 +1,5 @@
+import pdb
+
 from gym.envs import register
 import numpy as np
 
@@ -91,6 +93,20 @@ def get_preprocess_action(env, command_type, clip=True):
             new_pos = 0.5*true_acc*env.dt**2 + env.joint_vel*env.dt + env.joint_pos
             new_pos = np.clip(new_pos, env.joint_qpos_min, env.joint_qpos_max)
             return new_pos
+    elif command_type == "acc-debug":
+        def preprocess_action(action):
+            # Assume actions are vel deltas and output of tanh...
+            if clip:
+                action = np.clip(action, -1, 1)
+            acc = action * env.joint_qacc_max
+            delta_vel = acc * env.dt
+            # Clip velocity
+            end_vel = env.joint_vel + delta_vel
+            end_vel = np.clip(end_vel, env.joint_qvel_min, env.joint_qvel_max)
+            true_acc = (end_vel - env.joint_vel)/env.dt
+            
+            # return env.joint_pos, env.joint_vel + np.random.randn(7)*0.0011, true_acc
+            return env.joint_pos, env.joint_vel, true_acc
     elif command_type == "delta_pos":
         def preprocess_action(action):
             # Assume actions are pos deltas and output of tanh...

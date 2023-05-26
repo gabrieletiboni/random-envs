@@ -51,6 +51,7 @@ License :: Under Apache License, Version 2.0 (the "License"); you may not use th
         <default class="panda_arm">
             {% if reduce_damping %}
             <joint damping="0" armature="1e3"/>
+            <!-- <joint damping="10" armature="1e-3"/> -->
             {% else %}
             <joint damping="100"/>
             {% endif %}
