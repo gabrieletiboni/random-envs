@@ -10,7 +10,7 @@ License :: Under Apache License, Version 2.0 (the "License"); you may not use th
 <option timestep="0.001" noslip_iterations="10" />
 <size nuser_actuator="5"/>
 
-{% set reduce_damping=reduce_damping | default(False) %}
+{% set damping_mode=damping_mode | default("damping") %}
 
 <asset>
     <mesh name="link0_col" file="collision/link0.stl"/>
@@ -49,18 +49,25 @@ License :: Under Apache License, Version 2.0 (the "License"); you may not use th
             <geom contype="1" conaffinity="1" group="3" type="mesh" rgba="1 1 1 0"/>
         </default>
         <default class="panda_arm">
-            {% if reduce_damping %}
+            {% if damping_mode == "armature" %}
             <joint damping="0" armature="1e3"/>
-            <!-- <joint damping="10" armature="1e-3"/> -->
-            {% else %}
+            {% elif damping_mode == "damping" %}
             <joint damping="100"/>
+            {% else %}
+            <!-- <joint damping="0" armature="0.001"/> -->
+            <!-- <joint damping="0." armature="6e1"/> -->
+            <joint damping="0." armature="1e3"/>
             {% endif %}
         </default>
         <default class="panda_forearm">
-            {% if reduce_damping %}
-            <joint damping="0.0" armature="1e3"/>
-            {% else %}
+            {% if damping_mode == "armature" %}
+            <joint damping="0" armature="1e3"/>
+            {% elif damping_mode == "damping" %}
             <joint damping="10"/>
+            {% else %}
+            <!-- <joint damping="0" armature="0.001"/> -->
+            <!-- <joint damping="0." armature="6e1"/> -->
+            <joint damping="0." armature="1e3"/>
             {% endif %}
         </default>
         <default class="panda_finger">

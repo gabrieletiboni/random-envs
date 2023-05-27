@@ -16,7 +16,41 @@ class Repeater():
         return
 
 
-class StatelessAccelerationIntegrator(Repeater):
+class DummyAccelerationIntegrator(Repeater):
+    """
+        Given an acceleration, simply returns the final
+        target pos and target vel after 20ms at each low-level timestep.
+
+        Simulates a steady-state tracker.
+    """
+    def __init__(self, num, dt):
+        super().__init__(num)
+        self._dt = dt
+
+    def __call__(self, cmd):
+        cur_pos, cur_vel, acc = cmd
+        dt = self.dt
+        env_dt = 0.02
+        for n in range(self.num):
+            # t = n * dt
+            t = env_dt
+            target_pos = cur_pos + t * cur_vel + 0.5 * acc * t ** 2
+            target_vel = cur_vel + t * acc
+            yield (target_pos, target_vel, acc)
+
+    @property
+    def dt(self):
+        if callable(self._dt):
+            return self._dt()
+        else:
+            return self._dt
+
+
+class AccelerationIntegrator(Repeater):
+    """
+        Given a desired acceleration, compute the integrated
+        jpos and jvel in a span of 20ms in the future.
+    """
     def __init__(self, num, dt):
         super().__init__(num)
         self._dt = dt

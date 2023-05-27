@@ -15,7 +15,7 @@ from random_envs.mujoco_panda.core.controllers import Controller, \
                                        FFJointPositionController, \
                                        JointImpedanceController, \
                                        TorqueController
-from random_envs.mujoco_panda.core.interpolation import Repeater, LinearInterpolator, QuadraticInterpolator, StatelessAccelerationIntegrator
+from random_envs.mujoco_panda.core.interpolation import Repeater, LinearInterpolator, QuadraticInterpolator, AccelerationIntegrator, DummyAccelerationIntegrator
 from random_envs.mujoco_panda.core.utils import env_field, register_panda_env, distance_penalty
 
 
@@ -831,7 +831,7 @@ register_panda_env(
         model_args = {"actuator_type": "torque",
                       "with_goal": True,
                       "finger_type": "3dprinted",
-                      "reduce_damping": True,
+                      "damping_mode": "custom",
                       "limit_ctrl": False,
                       "limit_force": False,
                       "init_joint_pos": panda_start_jpos,
@@ -853,17 +853,47 @@ register_panda_env(
 
 ### TEST NEW PASCAL JPOSCONTROL ENV
 register_panda_env(
-        id="PandaPush-PosCtrl-GoalA-debug-v0",
+        id="PandaPush-PosCtrl-GoalA-debug0-v0",
         entry_point="%s:PandaPushEnv" % __name__,
         model_file="franka_box.xml",
         controller=FFJointPositionController,
         controller_kwargs = {"clip_acceleration": False},
-        action_interpolator=StatelessAccelerationIntegrator,
+        action_interpolator=AccelerationIntegrator,
         action_repeat_kwargs={"dt": env_field("sim_dt")},
         model_args = {"actuator_type": "torque",
                       "with_goal": True,
                       "finger_type": "3dprinted",
-                      "reduce_damping": True,
+                      "damping_mode": "custom",
+                      "limit_ctrl": False,
+                      "limit_force": False,
+                      "init_joint_pos": panda_start_jpos,
+                      "box_size": [0.05, 0.05, 0.04]},
+        max_episode_steps=300,
+        env_kwargs = {"command_type": "acc-debug",
+                      "limit_power": 4,
+                      "contact_penalties": True,
+                      "control_penalty_coeff": 0.5,
+                      "task_reward": "target",
+                      "goal_low": fixed_push_goal_a,
+                      "goal_high": fixed_push_goal_a,
+                      "init_jpos_jitter": 0.,
+                      "rotation_in_obs": "sincosz",
+                      "box_height_jitter": 0.
+            }
+        )
+
+register_panda_env(
+        id="PandaPush-PosCtrl-GoalA-debug1-v0",
+        entry_point="%s:PandaPushEnv" % __name__,
+        model_file="franka_box.xml",
+        controller=FFJointPositionController,
+        controller_kwargs = {"clip_acceleration": False},
+        action_interpolator=DummyAccelerationIntegrator,
+        action_repeat_kwargs={"dt": env_field("sim_dt")},
+        model_args = {"actuator_type": "torque",
+                      "with_goal": True,
+                      "finger_type": "3dprinted",
+                      "damping_mode": "armature",
                       "limit_ctrl": False,
                       "limit_force": False,
                       "init_joint_pos": panda_start_jpos,
@@ -909,7 +939,7 @@ for dyn_type in randomized_dynamics:
                                 model_args = {"actuator_type": "torque",
                                               "with_goal": True,
                                               "finger_type": "3dprinted",
-                                              "reduce_damping": True,
+                                              "damping_mode": "armature",
                                               "limit_ctrl": False,
                                               "limit_force": False,
                                               "init_joint_pos": panda_start_jpos,
@@ -961,7 +991,7 @@ for dyn_type in randomized_dynamics:
                                       "goal_range_center": (random_goal[0]+random_goal[1])/2,
                                       "goal_range_size": np.array([(random_goal[1][0]-random_goal[0][0])/2, (random_goal[1][1]-random_goal[0][1])/2]),
                                       "finger_type": "3dprinted",
-                                      "reduce_damping": True,
+                                      "damping_mode": "armature",
                                       "limit_ctrl": False,
                                       "limit_force": False,
                                       "init_joint_pos": panda_start_jpos},
@@ -1034,7 +1064,7 @@ register_panda_env(
             "start_vel": env_field("joint_vel"),
             "dt": env_field("sim_dt")},
         model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted", "reduce_damping": True,
+            "finger_type": "3dprinted", "damping_mode": "armature",
             "limit_ctrl": False, "limit_force": False,
             "init_joint_pos": panda_start_jpos},
         max_episode_steps=300,
@@ -1076,7 +1106,7 @@ register_panda_env(
             "start_vel": env_field("joint_vel"),
             "dt": env_field("sim_dt")},
         model_args = {"actuator_type": "torque", "with_goal": True,
-            "finger_type": "3dprinted", "reduce_damping": True,
+            "finger_type": "3dprinted", "damping_mode": "armature",
             "limit_ctrl": False, "limit_force": False,
             "init_joint_pos": panda_start_jpos},
         max_episode_steps=300,
@@ -1111,7 +1141,7 @@ register_panda_env(
 #                         "start_vel": env_field("joint_vel"),
 #                         "dt": env_field("sim_dt")},
 #                     model_args = {"actuator_type": "torque", "with_goal": True,
-#                         "finger_type": "3dprinted", "reduce_damping": True,
+#                         "finger_type": "3dprinted", "damping_mode": "armature",
 #                         "limit_ctrl": False, "limit_force": False,
 #                         "init_joint_pos": panda_start_jpos},
 #                     max_episode_steps=300,
@@ -1134,7 +1164,7 @@ register_panda_env(
 #                         "start_vel": env_field("joint_vel"),
 #                         "dt": env_field("sim_dt")},
 #                     model_args = {"actuator_type": "torque", "with_goal": True,
-#                         "finger_type": "3dprinted", "reduce_damping": True,
+#                         "finger_type": "3dprinted", "damping_mode": "armature",
 #                         "limit_ctrl": False, "limit_force": False,
 #                         "init_joint_pos": panda_start_jpos},
 #                     max_episode_steps=300,
