@@ -453,21 +453,21 @@ class PandaPushEnv(PandaGymEnvironment):
             self.set_box_size([self.init_box_size[2]+jitter])
 
         if self.dyn_type == 'm':
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(task[0])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
 
         elif self.dyn_type == 'mf':
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(task[0])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
             self.set_box_friction(task[1:3])
 
         elif self.dyn_type == 'mft':
-            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             self.set_box_mass(task[0])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
             self.set_box_friction(task[1:4])
@@ -530,6 +530,16 @@ class PandaPushEnv(PandaGymEnvironment):
             self.set_joint_damping(task[:7])
             self.set_joint_frictionloss(task[7:14])
 
+        elif self.dyn_type == 'mfcomy_d_fl':
+            self.set_box_com(task[3:4])
+            self.set_box_mass(task[0])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            if self._needs_rebuilding:
+                self._rebuild_model()
+            self.set_box_friction(task[1:3])
+            self.set_joint_damping(task[4:11])
+            self.set_joint_frictionloss(task[11:18])
+
         else:
             raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
         return
@@ -561,8 +571,15 @@ class PandaPushEnv(PandaGymEnvironment):
         elif dyn_type == 'd_fl':  # joint dampings and joint frictionloss
             self.dyn_ind_to_name = {0: 'damping0', 1: 'damping1', 2: 'damping2', 3: 'damping3', 4: 'damping4', 5: 'damping5', 6: 'damping6',
                                     7: 'frictionloss0', 8: 'frictionloss1', 9: 'frictionloss2', 10: 'frictionloss3', 11: 'frictionloss4', 12: 'frictionloss5', 13: 'frictionloss6'}
+        elif dyn_type == 'mfcomy_d_fl':  # mass + friction x,y + comy + joint dampings and joint frictionloss
+            self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comy', 
+                                    4: 'damping0', 5: 'damping1', 6: 'damping2', 7: 'damping3', 8: 'damping4', 9: 'damping5', 10: 'damping6',
+                                    11: 'frictionloss0', 12: 'frictionloss1', 13: 'frictionloss2', 14: 'frictionloss3', 15: 'frictionloss4', 16: 'frictionloss5', 17: 'frictionloss6'}
         else:
             raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
+
+        # Safety check that above dicts are set properly
+        assert (len(self.dyn_ind_to_name.values())-1) in self.dyn_ind_to_name and len(set(self.dyn_ind_to_name.keys())) == len(self.dyn_ind_to_name.values())
 
         self.dyn_type = dyn_type
 
@@ -746,7 +763,7 @@ goal_ranges = {
                     'RandGoalDebug': (np.array([0.749, -0.001]), np.array([0.75, 0.001]))  # debug fixed goal
               }
 
-randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl']
+randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl', 'mfcomy_d_fl']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]
