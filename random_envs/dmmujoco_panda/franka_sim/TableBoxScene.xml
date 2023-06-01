@@ -36,10 +36,15 @@
 {% block worldbody %}
     {{ super() }}
     <body name="box" pos="{{ box_xy }} {{ table_height + table_thickness/2 + box_size[2] + 0.001}}">
-        <geom name="box" condim="6" type="box" size="{{box_size|join(" ")}}" material="checker_material" />
-        <inertial diaginertia="{{ utils.box_inertia(box_size[0]*2, box_size[1]*2, box_size[2]*2, box_mass) }}" mass="{{ box_mass }}" pos="{{ box_com }}" />
+        <geom name="box" condim="6" mass="0.1" type="box" size="{{box_size|join(" ")}}" material="checker_material" />
+        <!-- <inertial diaginertia="{{ utils.box_inertia(box_size[0]*2, box_size[1]*2, box_size[2]*2, box_mass) }}" mass="{{ box_mass }}" pos="{{ box_com }}" /> -->
         <site name="com_pos" pos="{{ box_com }}" size="0.01" type="sphere" material="red_target" />
         <joint limited="false" name="box_joint" type="free" />
+
+       <body pos="0 0 0">
+            <geom name="com_util" mass="0.5" type="box" size="{{ box_size[0]-0.002 }} 0.02 {{ box_size[2] - 0.002 }}" material="red_target"/>
+       </body>
+        
     </body>
 {% endblock %}
 
