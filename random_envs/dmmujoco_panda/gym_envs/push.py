@@ -458,7 +458,7 @@ class PandaPushEnv(PandaGymEnvironment):
         if self.box_height_jitter > 0.0:
             # mujoco expects size as length from center (halved)
             jitter = np.random.uniform(-self.box_height_jitter, self.box_height_jitter) / 2
-            self.set_box_size(self, [self.init_box_size[2]+jitter])
+            self.set_box_size([self.init_box_size[2]+jitter])
 
         if self.dyn_type == 'mf':
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
