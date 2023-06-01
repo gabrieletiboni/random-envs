@@ -12,6 +12,7 @@
 import argparse
 import pdb
 
+import numpy as np
 import gym
 import random_envs
 

@@ -5,3 +5,6 @@ Jinja2==3.1.2
 scipy
 patchelf
 pyglet==1.5.27   					# CartPole requirement
+mujoco==2.3.5						# dmmujoco envs requirement
+gymnasium==0.28.1 					# dmmujoco envs requirement
+imageio==2.30.0 					# dmmujoco envs requirement

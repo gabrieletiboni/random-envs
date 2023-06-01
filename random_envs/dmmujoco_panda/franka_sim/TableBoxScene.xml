@@ -1,0 +1,51 @@
+{% extends "TableScene.xml" %}
+{% import 'utils.xml' as utils %}
+
+<!-- If the default values are changed, the corresponding get_default_task() method has to be changed accordingly -->
+{% set with_goal=with_goal | default(False) %}
+{% set display_goal_range=display_goal_range | default(False) %}
+{% set box_com=box_com | default("0.0 0.0 0.0") %}
+{% set box_mass=box_mass | default(0.8) %}
+{% set box_inertia=box_inertia | default("0.00075 0.00075 0.00075") %}
+
+{% set box_size=box_size|default([0.05, 0.05, 0.04]) %}
+{% set box_xy=box_xy | default("1. 0.0") %}
+{% set box_transparency=box_transparency | default(0.5) %}
+
+{% block assets %}
+    {# super includes the contents of the parent block #}
+    {# In this case, it's needed because we have to load the table mesh #}
+    {{ super() }}
+    <!-- <material name="blue" rgba="0.031 0.255 0.361 1"/> -->
+    <texture name="yellow_black_checker" type="2d" builtin="checker" rgb1="1 1 0" rgb2=".0 .0 .0" width="512" height="512"/>
+    <material name="checker_material" texture="yellow_black_checker" rgba="1 1 1 {{ box_transparency }}" texrepeat="1 1" texuniform="true" />
+    <material name="red_target" rgba="0.847 0.066 0.349 1"/>
+{% endblock %}
+
+{% block default %}
+    {{ super() }}
+    <default class="box-finger">
+        <pair condim="6" solref="1e-2 1" friction=".5 .5 0.0001 0.001 0.001"/>
+    </default>
+
+    <default class="box-table">
+        <pair condim="6" solref="1e-2 1" solimp="0.01 0.99 0.005 0.5 2" friction="0.8 0.8 0.01 0.1 0.1"/>
+    </default>
+{% endblock %}
+
+{% block worldbody %}
+    {{ super() }}
+    <body name="box" pos="{{ box_xy }} {{ table_height + table_thickness/2 + box_size[2] + 0.001}}">
+        <geom name="box" condim="6" type="box" size="{{box_size|join(" ")}}" material="checker_material" />
+        <inertial diaginertia="{{ utils.box_inertia(box_size[0]*2, box_size[1]*2, box_size[2]*2, box_mass) }}" mass="{{ box_mass }}" pos="{{ box_com }}" />
+        <site name="com_pos" pos="{{ box_com }}" size="0.01" type="sphere" material="red_target" />
+        <joint limited="false" name="box_joint" type="free" />
+    </body>
+{% endblock %}
+
+{% block contact %}
+    {{ super() }}
+    <pair class="box-table" geom1="table" geom2="box" />
+    <pair class="box-finger" geom1="panda_finger1" geom2="box" />
+    <pair class="box-finger" geom1="panda_finger2" geom2="box" />
+{% endblock %}
