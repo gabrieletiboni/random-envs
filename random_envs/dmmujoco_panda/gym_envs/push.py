@@ -746,7 +746,7 @@ goal_ranges = {
                     'RandGoalDebug': (np.array([0.749, -0.001]), np.array([0.75, 0.001]))  # debug fixed goal
               }
 
-randomized_dynamics = ['mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd']
+randomized_dynamics = ['mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]
@@ -756,7 +756,7 @@ clip_accelerations = [True, False]
 
 # Simple env for debugging
 register_panda_env(
-        id="DMPandaPush-PosCtrl-GoalA-v0",
+        id="DMPandaPush-FFPosCtrl-GoalA-v0",
         entry_point="%s:PandaPushEnv" % __name__,
         model_file="TableBoxScene.xml",
         controller=FFJointPositionController,
