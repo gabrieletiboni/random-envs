@@ -29,7 +29,7 @@
     </default>
 
     <default class="box-table">
-        <pair condim="6" solref="1e-2 1" solimp="0.01 0.99 0.005 0.5 2" friction="0.8 0.8 0.01 0.1 0.1"/>
+        <pair condim="6" solref="1e-2 1" solimp="0.01 0.99 0.005 0.5 2" friction="0.5 0.5 0.01 0.1 0.1"/>
     </default>
 {% endblock %}
 
