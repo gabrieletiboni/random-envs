@@ -584,9 +584,9 @@ class PandaPushEnv(PandaGymEnvironment):
             .is set accordingly
         """
         search_bounds_mean = {
-               'mass': (0.08, 2.0),
-               'frictionx': (0.2, 2.0),
-               'frictiony': (0.2, 2.0),
+               'mass': (0.2, 1.2),
+               'frictionx': (0.05, 1.2),
+               'frictiony': (0.05, 1.2),
                'frictiont': (0.001, 0.5),
                'solref0': (0.001, 0.02),
                'solref1': (0.4, 1.),
@@ -613,8 +613,8 @@ class PandaPushEnv(PandaGymEnvironment):
         """Returns lowest possible feasible value for each dynamics"""
         lowest_value = {
                     'mass': 0.02, # 20gr
-                    'frictionx': 0.1,
-                    'frictiony': 0.1,
+                    'frictionx': 0.01,
+                    'frictiony': 0.01,
                     'frictiont': 0.001,
                     'comx': -0.05,
                     'comy': -0.05,
@@ -640,8 +640,8 @@ class PandaPushEnv(PandaGymEnvironment):
         """Returns highest possible feasible value for each dynamics"""
         highest_value = {
                     'mass': 2.0, #2kg
-                    'frictionx': 3.,
-                    'frictiony': 3.,
+                    'frictionx': 2.,
+                    'frictiony': 2.,
                     'frictiont': 1,
                     'comx': 0.05,
                     'comy': 0.05,
