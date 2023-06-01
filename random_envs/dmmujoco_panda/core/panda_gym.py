@@ -137,6 +137,7 @@ class PandaGymEnvironment(RandomEnv):
         """
             action: e.g. acceleration in [-1, 1] from tanh
         """
+        action = np.array(action)  # may no longer be needed
 
         # Normalized acc [-1, 1] -> ctrl_format (e.g. (des_pos, des_vel, des_acc) in 20ms)
         action = self.preprocess_action(action)
@@ -292,21 +293,21 @@ class PandaGymEnvironment(RandomEnv):
         """
         :return: the joint position of the robot
         """
-        return self.data.qpos[self.arm_joint_index]
+        return np.array(self.data.qpos[self.arm_joint_index])
 
     @property
     def joint_vel(self):
         """
         :return: the joint velocity of the robot
         """
-        return self.data.qvel[self.arm_joint_index]
+        return np.array(self.data.qvel[self.arm_joint_index])
 
     @property
     def joint_acc(self):
         """
         :return: the joint acceleration of the robot
         """
-        return self.data.qacc[self.arm_joint_index]
+        return np.array(self.data.qacc[self.arm_joint_index])
 
     @property
     def gripper_pos(self):
