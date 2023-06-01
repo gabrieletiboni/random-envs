@@ -106,8 +106,12 @@ class PandaGymEnvironment(RandomEnv):
         self.arm_act_index = [self.model.actuator(f"actuator{i+1}").id for i in range(7)]
 
         # Values obtained through SystemIdentification with real panda with FFJointPositionController
-        self.set_joint_damping(np.array([1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023]))
-        self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
+        # self.set_joint_damping(np.array([1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023]))
+        # self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
+
+        # Real Panda torque interface automatically compensates for damping and friction. Se we can train with lower values.
+        self.set_joint_damping(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
+        self.set_joint_frictionloss(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
 
     def _rebuild_model(self):
         self._initialize_simulation()

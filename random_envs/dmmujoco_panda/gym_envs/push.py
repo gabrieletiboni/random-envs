@@ -592,20 +592,20 @@ class PandaPushEnv(PandaGymEnvironment):
                'solref1': (0.4, 1.),
                'comx': (-0.05, 0.05),
                'comy': (-0.05, 0.05),
-               'damping0': (0, 3.3028),  # double the SysId init value
-               'damping1': (0, 3.3028),
-               'damping2': (0, 3.3028),
-               'damping3': (0, 3.3028),
-               'damping4': (0, 3.3028),
-               'damping5': (0, 3.3028),
-               'damping6': (0, 3.3028),
-               'frictionloss0': (0., 2.8733),  # double the SysId init value
-               'frictionloss1': (0., 2.8733),
-               'frictionloss2': (0., 2.8733),
-               'frictionloss3': (0., 2.8733),
-               'frictionloss4': (0., 2.8733),
-               'frictionloss5': (0., 2.8733),
-               'frictionloss6': (0., 2.8733),
+               'damping0': (0.025, 0.2),  # double the SysId init value
+               'damping1': (0.025, 0.2),
+               'damping2': (0.025, 0.2),
+               'damping3': (0.025, 0.2),
+               'damping4': (0.025, 0.2),
+               'damping5': (0.025, 0.2),
+               'damping6': (0.025, 0.2),
+               'frictionloss0': (0.025, 0.2),  # double the SysId init value
+               'frictionloss1': (0.025, 0.2),
+               'frictionloss2': (0.025, 0.2),
+               'frictionloss3': (0.025, 0.2),
+               'frictionloss4': (0.025, 0.2),
+               'frictionloss5': (0.025, 0.2),
+               'frictionloss6': (0.025, 0.2),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 
