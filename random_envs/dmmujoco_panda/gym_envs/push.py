@@ -159,16 +159,6 @@ class PandaPushEnv(PandaGymEnvironment):
     def step(self, action):
         state, reward, done, info = super().step(action)
 
-        # print('gripper pos:', self.gripper_pos)
-        # print('goal pos:', self.goal_pos)
-        # print('box pos:', self.box_pos)
-        # print('box vel:', self.box_velp)
-        # print('goal dist:', self.goal_dist)
-
-        # self.set_box_friction(np.array([10.]*2))
-        # self.set_boxgripper_friction(np.array([0.]*2))
-        # self.set_box_mass(0.03)
-
         box_vel = self.box_velp
         for dim, vel in zip("xyz", box_vel):
             info[f"puck_dpos_{dim}"] = vel*self.dt
@@ -440,10 +430,12 @@ class PandaPushEnv(PandaGymEnvironment):
         :description: Sets the mass of the hockey puck
         :param mass: The new mass (float)
         """
-        box_mass, box_inertia = self.get_body_mass_inertia("box")
-        box_inertia_base = box_inertia / box_mass
-        new_inertia = box_inertia_base * new_mass
-        self.set_body_mass_inertia("box", new_mass, new_inertia)
+        assert new_mass >= 0
+        self.model_kwargs["box_mass"] = float(new_mass)
+        self._needs_rebuilding = True
+
+    def get_box_mass(self):
+        return np.array(self.model.body("com").mass)[0]
 
     def get_task(self):
         return self._current_task
@@ -460,34 +452,40 @@ class PandaPushEnv(PandaGymEnvironment):
             jitter = np.random.uniform(-self.box_height_jitter, self.box_height_jitter) / 2
             self.set_box_size([self.init_box_size[2]+jitter])
 
-        if self.dyn_type == 'mf':
+        if self.dyn_type == 'm':
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(task[0])
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(self,task[0])
+
+        elif self.dyn_type == 'mf':
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(task[0])
+            if self._needs_rebuilding:
+                self._rebuild_model()
             self.set_box_friction(task[1:3])
 
         elif self.dyn_type == 'mft':
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            self.set_box_mass(task[0])
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(task[0])
             self.set_box_friction(task[1:4])
 
         elif self.dyn_type == 'mfcom':
             self.set_box_com(task[3:5])
+            self.set_box_mass(task[0])
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(task[0])
             self.set_box_friction(task[1:3])
 
         elif self.dyn_type == 'mfcomy':
             self.set_box_com(task[3:4])
+            self.set_box_mass(task[0])
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(task[0])
             self.set_box_friction(task[1:3])
 
         elif self.dyn_type == 'com':
@@ -504,18 +502,18 @@ class PandaPushEnv(PandaGymEnvironment):
 
         elif self.dyn_type == 'mftcom':
             self.set_box_com(task[4:6])
+            self.set_box_mass(task[0])
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(task[0])
             self.set_box_friction(task[1:4])
 
         elif self.dyn_type == 'mfcomd':
             self.set_box_com(task[3:5])
+            self.set_box_mass(task[0])
             # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
             if self._needs_rebuilding:
                 self._rebuild_model()
-            self.set_box_mass(task[0])
             self.set_box_friction(task[1:3])
             self.set_joint_damping(task[5:12])
 
@@ -540,7 +538,9 @@ class PandaPushEnv(PandaGymEnvironment):
         """Selects which dynamics to be randomized
         with the corresponding name encoding
         """
-        if dyn_type == 'mf':  # mass + friction
+        if dyn_type == 'm':  # mass
+            self.dyn_ind_to_name = {0: 'mass'}
+        elif dyn_type == 'mf':  # mass + friction
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony'}
         elif dyn_type == 'mft':  # mass + friction + torsional friction
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'frictiont'}
@@ -666,7 +666,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
     def get_default_task(self):
         default_values = {
-            'mass': self.init_box_mass[0],
+            'mass': self.init_box_mass,
             'frictionx': self.init_box_table_friction[0],
             'frictiony': self.init_box_table_friction[1],
             'frictiont': self.init_box_table_friction[2],
@@ -696,7 +696,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.init_joint_frictionloss = self.get_joint_frictionloss()
         self.init_box_table_friction = np.array(self.get_pair_friction("box", "table"))
         self.init_box_com = self.model_kwargs["box_com"] if "box_com" in self.model_kwargs else np.array([0.0, 0.0])
-        self.init_box_mass = np.array(self.get_body_mass_inertia("box")[0])
+        self.init_box_mass = self.get_box_mass()
 
 
 
@@ -746,7 +746,7 @@ goal_ranges = {
                     'RandGoalDebug': (np.array([0.749, -0.001]), np.array([0.75, 0.001]))  # debug fixed goal
               }
 
-randomized_dynamics = ['mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl']
+randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]

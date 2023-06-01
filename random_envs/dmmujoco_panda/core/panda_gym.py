@@ -347,27 +347,6 @@ class PandaGymEnvironment(RandomEnv):
                            % (geom_name1, geom_name2))
         return pair_id
 
-    def set_body_mass_inertia(self, body_name, mass, inertia=None):
-        cur_mass, cur_inertia = self.get_body_mass_inertia(body_name)
-
-        # If no inertia passed, just scale it up with mass
-        if inertia is None:
-            inertia = cur_inertia/cur_mass*mass
-
-        # Set mass and inertia
-        cur_mass[:] = mass
-        cur_inertia[:] = inertia
-
-    def get_body_mass_inertia(self, body_name):
-        """Returns references to body mass and inertia
-        for changing these values"""
-        body_id = self.model.body(body_name).id
-        # [i:i+1] to return a reference to array element, not the value
-        mass = self.model.body_mass[body_id:body_id+1]
-        inertia = self.model.body_inertia[body_id]
-        return mass, inertia
-
-
     def set_armature(self, armature):
         self.model.dof_armature[self.arm_joint_index] = armature[:]
 
