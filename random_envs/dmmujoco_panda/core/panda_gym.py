@@ -18,12 +18,13 @@ from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
 import gym
 
 from random_envs.dmmujoco_panda.core.template_renderer import TemplateRenderer
-from random_envs.mujoco_panda.core.controllers import Controller, \
-                                                      FFJointPositionController, \
-                                                      TorqueController
-from random_envs.mujoco_panda.core.interpolation import Repeater, AccelerationIntegrator
-from random_envs.mujoco_panda.core.utils import register_panda_env, \
-                                                soft_tanh_limit
+from random_envs.dmmujoco_panda.core.controllers import Controller, \
+                                                        FFJointPositionController, \
+                                                        TorqueController
+from random_envs.dmmujoco_panda.core.interpolation import Repeater, AccelerationIntegrator
+from random_envs.dmmujoco_panda.core.utils import register_panda_env, \
+                                                soft_tanh_limit, \
+                                                square_penalty_limit
 from random_envs.random_env import RandomEnv
 
 DEFAULT_SIZE = 1280
@@ -118,6 +119,9 @@ class PandaGymEnvironment(RandomEnv):
         self.interpolator = self._build_interpolator()
         self._needs_rebuilding = False
     
+    def call_rebuild_model(self):
+        self._rebuild_model()
+
     def parse_xml(self, template_file, **kwargs):
         """
         :description: Parse XML given Jinja template file,
@@ -157,8 +161,7 @@ class PandaGymEnvironment(RandomEnv):
         norm_vel = np.abs(self.joint_vel)/self.joint_qvel_max
         position_penalty = soft_tanh_limit(self.joint_pos, self.joint_qpos_min,
                 self.joint_qpos_max, square_coeff=0., betas=(0.03, 0.03)).sum()
-        velocity_penalty = soft_tanh_limit(self.joint_vel, self.joint_qvel_min,
-                self.joint_qvel_max, betas=(0.2, 0.2), square_coeff=0.5).sum()
+        velocity_penalty = square_penalty_limit(self.joint_vel, self.joint_qvel_min, self.joint_qvel_max, square_coeff=5.).sum()
         acceleration_penalty = soft_tanh_limit(self.joint_acc,
                 -self.joint_qacc_max, self.joint_qacc_max, betas=(0.2, 0.2), square_coeff=0.5).sum()
         control_penalty = velocity_penalty + acceleration_penalty + position_penalty  # each term is bounded between [0, 1]

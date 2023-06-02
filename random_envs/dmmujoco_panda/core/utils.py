@@ -21,6 +21,11 @@ def soft_tanh_limit(x, low, high, betas=(0.35, 0.35), linear_coeff=1e-3, square_
 
     return square_term*square_coeff + penalty*(1-square_coeff) + linear_coeff * linear_term
 
+def square_penalty_limit(x, low, high, square_coeff=0.5):
+    norm_x = (x - low) / (high - low)
+    square_term = np.fmin(square_coeff*(norm_x*2-1)**2, 1.)
+    return square_term
+
 def distance_penalty(d, w=1, v=1, alpha=1e-3):
     return -w*d**2 - v*np.log(d**2 + alpha)
 
