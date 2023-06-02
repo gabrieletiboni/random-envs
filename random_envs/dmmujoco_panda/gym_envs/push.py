@@ -365,7 +365,7 @@ class PandaPushEnv(PandaGymEnvironment):
         # I suspect zyx is not the right convention.
         # Check out eulerseq attribute at https://mujoco.readthedocs.io/en/stable/XMLreference.html#compiler 
         # euler = transform.as_euler('zyx')  
-        euler = transform.as_euler(random_envs.mujoco_panda.EULER_ORDER)  # I did some tests and this is correct (xyz)
+        euler = transform.as_euler(random_envs.dmmujoco_panda.EULER_ORDER)  # I did some tests and this is correct (xyz)
 
         return euler
 
