@@ -28,11 +28,11 @@
 {% block default %}
     {{ super() }}
     <default class="box-finger">
-        <pair condim="6" solref="1e-2 1" friction=".5 .5 0.0001 0.001 0.001"/>
+        <pair condim="6" solref="1e-2 1" friction="0.3 0.3 0.0001 0.001 0.001"/>
     </default>
 
     <default class="box-table">
-        <pair condim="6" solref="1e-2 1" solimp="0.01 0.99 0.005 0.5 2" friction="0.5 0.5 0.01 0.1 0.1"/>
+        <pair condim="6" solref="1e-2 1" solimp="0.01 0.99 0.005 0.5 2" friction="0.3 0.3 0.01 0.1 0.1"/>
     </default>
 {% endblock %}
 
