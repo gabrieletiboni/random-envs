@@ -46,7 +46,7 @@ class PandaGymEnvironment(RandomEnv):
                  camera_id: Optional[int] = 1,
                  camera_name: Optional[str] = "side_camera",
                  default_camera_config: Optional[dict] = None,
-                 init_jpos_jitter=0.2,
+                 init_jpos_jitter=0.0,
                  init_jvel_jitter=0.0,
                  control_penalty_coeff=1.):
         RandomEnv.__init__(self)
@@ -62,6 +62,8 @@ class PandaGymEnvironment(RandomEnv):
         self.n_frames = n_frames
         self._initialize_simulation()
         self._set_limits()
+
+        assert init_jpos_jitter == 0.0 and init_jvel_jitter == 0.0, 'TODO: they are not yet implemented'
         
         self.init_qpos = self.data.qpos.ravel().copy()
         self.init_qvel = self.data.qvel.ravel().copy()
