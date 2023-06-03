@@ -77,8 +77,8 @@ class FFJointPositionController(Controller):
     """
     def __init__(self,
                  env,
-                 clip_position=True,
-                 clip_acceleration=True,
+                 clip_position=False,
+                 clip_acceleration=False,
                  velocity_noise=False,
                  scale_kp: float = 1.,
                  scale_kd: float = 1.):
