@@ -326,7 +326,7 @@ class PandaPushEnv(PandaGymEnvironment):
             unstable.
         """
         box_xyz = self.data.joint("box_joint").qpos[:3]
-        box_xyz = np.clip(box_xyz, -10, 10)
+        box_xyz = np.clip(box_xyz, -2, 2)
         return np.array(box_xyz)
 
     @box_pos.setter
@@ -606,8 +606,8 @@ class PandaPushEnv(PandaGymEnvironment):
         """
         search_bounds_mean = {
                'mass': (0.2, 1.2),
-               'frictionx': (0.05, 1.2),
-               'frictiony': (0.05, 1.2),
+               'frictionx': (0.05, .8),
+               'frictiony': (0.05, .8),
                'frictiont': (0.001, 0.5),
                'solref0': (0.001, 0.02),
                'solref1': (0.4, 1.),
