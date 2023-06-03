@@ -774,6 +774,7 @@ init_jpos_jitters = [0.0, 0.02]
 init_box_jitters = [0.0, 0.01]
 box_height_jitters = [0.0, 0.005]
 clip_accelerations = [True, False]
+contact_penalties = False
 
 # Simple env for debugging
 register_panda_env(
@@ -789,7 +790,7 @@ register_panda_env(
                         "box_size": [0.05, 0.05, 0.04]},
         max_episode_steps=300,
         env_kwargs = {"command_type": "acc",
-                      "contact_penalties": True,
+                      "contact_penalties": contact_penalties,
                       "control_penalty_coeff": 0.5,
                       "task_reward": "target",
                       "goal_low": fixed_push_goal_a,
@@ -826,7 +827,7 @@ for dyn_type in randomized_dynamics:
                                                         "box_size": [0.05, 0.05, 0.04]},
                                         max_episode_steps=300,
                                         env_kwargs = {"command_type": "acc",
-                                                      "contact_penalties": True,
+                                                      "contact_penalties": contact_penalties,
                                                       "control_penalty_coeff": 0.5,
                                                       "task_reward": task_reward,
                                                       "norm_reward": norm_reward,
