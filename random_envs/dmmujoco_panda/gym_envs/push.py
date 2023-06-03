@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from copy import deepcopy
 import csv
 import pdb
+import json
 
 import numpy as np
 import gym
@@ -174,6 +175,9 @@ class PandaPushEnv(PandaGymEnvironment):
             contacts = self.get_contacts()
             info = dict(**info, **contacts)
             reward -= np.sum([v for _, v in contacts.items()])
+
+        if self.verbose >= 1:
+            print(f'---step reward: {reward}\n{json.dumps(info, sort_keys=True, indent=4)}')
 
         return state, reward, done, info
 
