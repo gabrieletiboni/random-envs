@@ -81,12 +81,16 @@ class PandaGymEnvironment(RandomEnv):
 
         self.control_penalty_coeff = control_penalty_coeff  # penalize pos, vel and acc when they are close to the limits
 
+        self.verbose = 0
         self._needs_rebuilding = False
         self.reset()
 
     # def dump_string_to_file(self, string, file_path):
     #     with open(file_path, 'w') as file:
     #         file.write(string)
+
+    def set_verbosity(self, verbose):
+        self.verbose = verbose
 
     def _initialize_simulation(self):
         parsed_xml = self.parse_xml(self.model_file, **self.model_kwargs)
