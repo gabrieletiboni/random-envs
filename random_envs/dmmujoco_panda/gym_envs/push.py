@@ -820,7 +820,7 @@ for dyn_type in randomized_dynamics:
                                         action_interpolator_kwargs={"velocity_noise": True},
                                         model_kwargs = {"actuator_type": "torque",
                                                         "with_goal": True,
-                                                        "display_goal_range": True,
+                                                        "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
                                                         "goal_range_center": (goal_range[0]+goal_range[1])/2,
                                                         "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
                                                         "init_joint_pos": panda_start_jpos,
