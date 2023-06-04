@@ -1,4 +1,5 @@
 from . import random_hopper
+from . import random_hopper_hard
 from . import random_hopper_unmodeled
 from . import random_half_cheetah
 from . import random_half_cheetah_unmodeled

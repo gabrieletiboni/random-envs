@@ -85,6 +85,10 @@ class MujocoEnv(RandomEnv):
         # self.reward_threshold = None
         # self.dyn_ind_to_name = None
 
+        self.verbose = 0
+
+    def set_verbosity(self, verbose):
+        self.verbose = verbose
 
     def set_model_args(self, args):
         self.model_args = args
