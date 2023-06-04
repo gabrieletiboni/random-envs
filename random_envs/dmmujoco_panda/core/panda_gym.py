@@ -241,7 +241,7 @@ class PandaGymEnvironment(RandomEnv):
         return np.concatenate(
             [
                 self.data.qpos.flat[:7],
-                self.data.qvel.flat[:7]
+                self.data.qvel.flat[:7]  + np.random.randn(7)*self.jvel_noise_stdev
             ]
         )
 

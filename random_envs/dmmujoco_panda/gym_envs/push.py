@@ -40,6 +40,8 @@ class PandaPushEnv(PandaGymEnvironment):
                  init_jpos_jitter=0.2,
                  init_jvel_jitter=0.0,
                  box_height_jitter=0.0,
+                 box_noise_stdev=0.0,
+                 jvel_noise_stdev=0.0,
                  rotation_in_obs="none",
                  control_penalty_coeff=1.,
                  randomized_dynamics='mf',
@@ -58,6 +60,8 @@ class PandaPushEnv(PandaGymEnvironment):
         # avoid exploiting the edge for pushing
         self.init_box_size = model_kwargs['box_size'] if 'box_size' in model_kwargs else None
         self.box_height_jitter = box_height_jitter
+        self.box_noise_stdev = box_noise_stdev
+        self.jvel_noise_stdev = jvel_noise_stdev
         
         # Optionally add box orientation to the state space
         if rotation_in_obs == "none":
@@ -340,6 +344,10 @@ class PandaPushEnv(PandaGymEnvironment):
         value_dim = value.shape[0]
         self.data.joint("box_joint").qpos[:value_dim] = value[:]
 
+    def set_box_pos(self, value):
+        value_dim = value.shape[0]
+        self.data.joint("box_joint").qpos[:value_dim] = value[:]
+
     @property
     def goal_pos(self):
         return np.array(self.data.geom("goal").xpos[:3])
@@ -389,8 +397,8 @@ class PandaPushEnv(PandaGymEnvironment):
         elif self.rotation_in_obs == "sincosz":
             rot = [np.sin(self.box_orientation[2]), np.cos(self.box_orientation[2])]
 
-        return np.concatenate([super()._get_obs(), self.box_pos[:2],
-                               rot, self.goal_pos[:2]])
+        return np.concatenate([super()._get_obs(), self.box_pos[:2] + np.random.randn(2)*self.box_noise_stdev,
+                               rot + np.random.randn(len(rot))*self.box_noise_stdev, self.goal_pos[:2]])
 
 
     def set_box_size(self, value: List[float]):
@@ -773,6 +781,8 @@ task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]
 init_box_jitters = [0.0, 0.01]
 box_height_jitters = [0.0, 0.005]
+box_noise_stdevs = [0.0, 0.002]
+jvel_noise_stdevs = [0.0, 0.0011]
 clip_accelerations = [True, False]
 contact_penalties = False
 
@@ -810,33 +820,37 @@ for dyn_type in randomized_dynamics:
                     for box_height_jitter in box_height_jitters:
                         for goal_name, goal_range in goal_ranges.items():
                             for clip_acc in clip_accelerations:
-                                register_panda_env(
-                                        id=f"DMPandaPush-FFPosCtrl{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
-                                        entry_point="%s:PandaPushEnv" % __name__,
-                                        model_file="TableBoxScene.xml",
-                                        controller=FFJointPositionController,
-                                        controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
-                                        action_interpolator=AccelerationIntegrator,
-                                        action_interpolator_kwargs={"velocity_noise": True},
-                                        model_kwargs = {"actuator_type": "torque",
-                                                        "with_goal": True,
-                                                        "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
-                                                        "goal_range_center": (goal_range[0]+goal_range[1])/2,
-                                                        "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
-                                                        "init_joint_pos": panda_start_jpos,
-                                                        "box_size": [0.05, 0.05, 0.04]},
-                                        max_episode_steps=300,
-                                        env_kwargs = {"command_type": "acc",
-                                                      "contact_penalties": contact_penalties,
-                                                      "control_penalty_coeff": 1.,
-                                                      "task_reward": task_reward,
-                                                      "norm_reward": norm_reward,
-                                                      "goal_low": goal_range[0],
-                                                      "goal_high": goal_range[1],
-                                                      "init_jpos_jitter": init_jpos_jitter,
-                                                      "init_box_jitter": init_box_jitter,
-                                                      "box_height_jitter": box_height_jitter,
-                                                      "rotation_in_obs": "sincosz",
-                                                      "randomized_dynamics": dyn_type
-                                            }
-                                        )
+                                for box_noise_stdev in box_noise_stdevs:
+                                    for jvel_noise_stdev in jvel_noise_stdevs:
+                                        register_panda_env(
+                                                id=f"DMPandaPush-FFPosCtrl{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                                                entry_point="%s:PandaPushEnv" % __name__,
+                                                model_file="TableBoxScene.xml",
+                                                controller=FFJointPositionController,
+                                                controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
+                                                action_interpolator=AccelerationIntegrator,
+                                                action_interpolator_kwargs={"velocity_noise": True},
+                                                model_kwargs = {"actuator_type": "torque",
+                                                                "with_goal": True,
+                                                                "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
+                                                                "goal_range_center": (goal_range[0]+goal_range[1])/2,
+                                                                "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
+                                                                "init_joint_pos": panda_start_jpos,
+                                                                "box_size": [0.05, 0.05, 0.04]},
+                                                max_episode_steps=300,
+                                                env_kwargs = {"command_type": "acc",
+                                                              "contact_penalties": contact_penalties,
+                                                              "control_penalty_coeff": 1.,
+                                                              "task_reward": task_reward,
+                                                              "norm_reward": norm_reward,
+                                                              "goal_low": goal_range[0],
+                                                              "goal_high": goal_range[1],
+                                                              "init_jpos_jitter": init_jpos_jitter,
+                                                              "init_box_jitter": init_box_jitter,
+                                                              "box_height_jitter": box_height_jitter,
+                                                              "box_noise_stdev": box_noise_stdev,
+                                                              "jvel_noise_stdev": jvel_noise_stdev,
+                                                              "rotation_in_obs": "sincosz",
+                                                              "randomized_dynamics": dyn_type
+                                                    }
+                                                )
