@@ -97,8 +97,8 @@ class PandaPushEnv(PandaGymEnvironment):
 
         self.contact_penalties_enabled = contact_penalties  # penalize contact-pairs proportional to penetration distance
         self.contact_penalties = [("box", "table", 1e2),
-                                ("panda_finger1", "box", 1e2),
-                                ("panda_finger2", "box", 1e2),
+                                # ("panda_finger1", "box", 1e2),
+                                # ("panda_finger2", "box", 1e2),
                                 ("panda_finger1", "table", 3e7),
                                 ("panda_finger2", "table", 3e7)]
         self.contact_penalties = [(self.model.geom(c[0]).id,
@@ -784,7 +784,7 @@ box_height_jitters = [0.0, 0.005]
 box_noise_stdevs = [0.0, 0.002]
 jvel_noise_stdevs = [0.0, 0.0011]
 clip_accelerations = [True, False]
-contact_penalties = False
+contact_penalties = [False, True]
 
 # Simple env for debugging
 register_panda_env(
@@ -800,7 +800,7 @@ register_panda_env(
                         "box_size": [0.05, 0.05, 0.04]},
         max_episode_steps=300,
         env_kwargs = {"command_type": "acc",
-                      "contact_penalties": contact_penalties,
+                      "contact_penalties": False,
                       "control_penalty_coeff": 1.,
                       "task_reward": "target",
                       "goal_low": fixed_push_goal_a,
@@ -822,35 +822,36 @@ for dyn_type in randomized_dynamics:
                             for clip_acc in clip_accelerations:
                                 for box_noise_stdev in box_noise_stdevs:
                                     for jvel_noise_stdev in jvel_noise_stdevs:
-                                        register_panda_env(
-                                                id=f"DMPandaPush-FFPosCtrl{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
-                                                entry_point="%s:PandaPushEnv" % __name__,
-                                                model_file="TableBoxScene.xml",
-                                                controller=FFJointPositionController,
-                                                controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
-                                                action_interpolator=AccelerationIntegrator,
-                                                action_interpolator_kwargs={"velocity_noise": True},
-                                                model_kwargs = {"actuator_type": "torque",
-                                                                "with_goal": True,
-                                                                "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
-                                                                "goal_range_center": (goal_range[0]+goal_range[1])/2,
-                                                                "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
-                                                                "init_joint_pos": panda_start_jpos,
-                                                                "box_size": [0.05, 0.05, 0.04]},
-                                                max_episode_steps=300,
-                                                env_kwargs = {"command_type": "acc",
-                                                              "contact_penalties": contact_penalties,
-                                                              "control_penalty_coeff": 1.,
-                                                              "task_reward": task_reward,
-                                                              "norm_reward": norm_reward,
-                                                              "goal_low": goal_range[0],
-                                                              "goal_high": goal_range[1],
-                                                              "init_jpos_jitter": init_jpos_jitter,
-                                                              "init_box_jitter": init_box_jitter,
-                                                              "box_height_jitter": box_height_jitter,
-                                                              "box_noise_stdev": box_noise_stdev,
-                                                              "jvel_noise_stdev": jvel_noise_stdev,
-                                                              "rotation_in_obs": "sincosz",
-                                                              "randomized_dynamics": dyn_type
-                                                    }
-                                                )
+                                        for contact_pen in contact_penalties:
+                                            register_panda_env(
+                                                    id=f"DMPandaPush-FFPosCtrl{'-ContPen' if contact_pen else ''}{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
+                                                    entry_point="%s:PandaPushEnv" % __name__,
+                                                    model_file="TableBoxScene.xml",
+                                                    controller=FFJointPositionController,
+                                                    controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
+                                                    action_interpolator=AccelerationIntegrator,
+                                                    action_interpolator_kwargs={"velocity_noise": True},
+                                                    model_kwargs = {"actuator_type": "torque",
+                                                                    "with_goal": True,
+                                                                    "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
+                                                                    "goal_range_center": (goal_range[0]+goal_range[1])/2,
+                                                                    "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
+                                                                    "init_joint_pos": panda_start_jpos,
+                                                                    "box_size": [0.05, 0.05, 0.04]},
+                                                    max_episode_steps=300,
+                                                    env_kwargs = {"command_type": "acc",
+                                                                  "contact_penalties": contact_pen,
+                                                                  "control_penalty_coeff": 1.,
+                                                                  "task_reward": task_reward,
+                                                                  "norm_reward": norm_reward,
+                                                                  "goal_low": goal_range[0],
+                                                                  "goal_high": goal_range[1],
+                                                                  "init_jpos_jitter": init_jpos_jitter,
+                                                                  "init_box_jitter": init_box_jitter,
+                                                                  "box_height_jitter": box_height_jitter,
+                                                                  "box_noise_stdev": box_noise_stdev,
+                                                                  "jvel_noise_stdev": jvel_noise_stdev,
+                                                                  "rotation_in_obs": "sincosz",
+                                                                  "randomized_dynamics": dyn_type
+                                                        }
+                                                    )
