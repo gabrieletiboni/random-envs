@@ -265,7 +265,9 @@ class PandaPushEnv(PandaGymEnvironment):
         :raises ValueError: if the dim of ``value`` is other than 2 or 5
         """
         pair_fric = self.get_pair_friction("box", "table")
-        if value.shape[0] == 2:
+        if value.shape[0] == 1:
+            pair_fric[:2] = np.repeat(value, 2)
+        elif value.shape[0] == 2:
             # Only set linear friction
             pair_fric[:2] = value
         elif value.shape[0] == 3:
@@ -552,6 +554,16 @@ class PandaPushEnv(PandaGymEnvironment):
             self.set_joint_damping(task[4:11])
             self.set_joint_frictionloss(task[11:18])
 
+        elif self.dyn_type == 'mf0comy_d_fl':
+            self.set_box_com(task[2:3])
+            self.set_box_mass(task[0])
+            # Make sure you rebuild the model before changing other mj parameters, otherwise they'll get overridden
+            if self._needs_rebuilding:
+                self._rebuild_model()
+            self.set_box_friction(task[1:2])
+            self.set_joint_damping(task[3:10])
+            self.set_joint_frictionloss(task[10:17])
+
         else:
             raise NotImplementedError(f"Current randomization type is not implemented (3): {self.dyn_type}")
         return
@@ -587,6 +599,11 @@ class PandaPushEnv(PandaGymEnvironment):
             self.dyn_ind_to_name = {0: 'mass', 1: 'frictionx', 2: 'frictiony', 3: 'comy', 
                                     4: 'damping0', 5: 'damping1', 6: 'damping2', 7: 'damping3', 8: 'damping4', 9: 'damping5', 10: 'damping6',
                                     11: 'frictionloss0', 12: 'frictionloss1', 13: 'frictionloss2', 14: 'frictionloss3', 15: 'frictionloss4', 16: 'frictionloss5', 17: 'frictionloss6'}
+        elif dyn_type == 'mf0comy_d_fl':  # mass + friction for both axes + comy + joint dampings and joint frictionloss
+            self.dyn_ind_to_name = {0: 'mass', 1: 'friction', 2: 'comy', 
+                                    3: 'damping0', 4: 'damping1', 5: 'damping2', 6: 'damping3', 7: 'damping4', 8: 'damping5', 9: 'damping6',
+                                    10: 'frictionloss0', 11: 'frictionloss1', 12: 'frictionloss2', 13: 'frictionloss3', 14: 'frictionloss4', 15: 'frictionloss5', 16: 'frictionloss6'}
+
         else:
             raise NotImplementedError(f"Randomization dyn_type not implemented: {dyn_type}")
 
@@ -605,7 +622,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.stdev_task = np.zeros(self.task_dim)
         return
 
-    def get_search_bounds_mean(self, index):
+    def get_search_bounds_mean(self, index=-1, name=None):
         """Get interval of dynamics parameters for UDR.
             
             Also used by DROPO to get search bounds for the
@@ -614,21 +631,22 @@ class PandaPushEnv(PandaGymEnvironment):
         """
         search_bounds_mean = {
                'mass': (0.2, 1.2),
-               'frictionx': (0.05, .8),
-               'frictiony': (0.05, .8),
+               'friction':  (0.05, .6),
+               'frictionx': (0.05, .6),
+               'frictiony': (0.05, .6),
                'frictiont': (0.001, 0.5),
                'solref0': (0.001, 0.02),
                'solref1': (0.4, 1.),
                'comx': (-0.05, 0.05),
                'comy': (-0.05, 0.05),
-               'damping0': (0.025, 0.2),  # double the SysId init value
+               'damping0': (0.025, 0.2),
                'damping1': (0.025, 0.2),
                'damping2': (0.025, 0.2),
                'damping3': (0.025, 0.2),
                'damping4': (0.025, 0.2),
                'damping5': (0.025, 0.2),
                'damping6': (0.025, 0.2),
-               'frictionloss0': (0.025, 0.2),  # double the SysId init value
+               'frictionloss0': (0.025, 0.2),
                'frictionloss1': (0.025, 0.2),
                'frictionloss2': (0.025, 0.2),
                'frictionloss3': (0.025, 0.2),
@@ -636,12 +654,16 @@ class PandaPushEnv(PandaGymEnvironment):
                'frictionloss5': (0.025, 0.2),
                'frictionloss6': (0.025, 0.2),
         }
-        return search_bounds_mean[self.dyn_ind_to_name[index]]
+        if name is None:
+            return search_bounds_mean[self.dyn_ind_to_name[index]]
+        else:
+            return search_bounds_mean[name]
 
     def get_task_lower_bound(self, index):
         """Returns lowest possible feasible value for each dynamics"""
         lowest_value = {
                     'mass': 0.02, # 20gr
+                    'friction':  0.01,
                     'frictionx': 0.01,
                     'frictiony': 0.01,
                     'frictiont': 0.001,
@@ -669,6 +691,7 @@ class PandaPushEnv(PandaGymEnvironment):
         """Returns highest possible feasible value for each dynamics"""
         highest_value = {
                     'mass': 2.0, #2kg
+                    'friction':  2.,
                     'frictionx': 2.,
                     'frictiony': 2.,
                     'frictiont': 1,
@@ -696,6 +719,7 @@ class PandaPushEnv(PandaGymEnvironment):
     def get_default_task(self):
         default_values = {
             'mass': self.init_box_mass,
+            'friction': self.init_box_table_friction[0],
             'frictionx': self.init_box_table_friction[0],
             'frictiony': self.init_box_table_friction[1],
             'frictiont': self.init_box_table_friction[2],
@@ -775,7 +799,7 @@ goal_ranges = {
                     'RandGoalDebug': (np.array([0.749, -0.001]), np.array([0.75, 0.001]))  # debug fixed goal
               }
 
-randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl', 'mfcomy_d_fl']
+randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl', 'mfcomy_d_fl', 'mf0comy_d_fl']
 norm_reward_bool=[True, False]
 task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]

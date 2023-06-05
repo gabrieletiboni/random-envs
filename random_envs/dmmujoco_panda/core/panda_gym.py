@@ -117,6 +117,8 @@ class PandaGymEnvironment(RandomEnv):
         # self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
 
         # Real Panda torque interface automatically compensates for damping and friction. Se we can train with lower values.
+        friction_bounds = self.get_search_bounds_mean(name='friction')
+        self.set_box_friction(np.array([(friction_bounds[0] + friction_bounds[1])/2]))
         self.set_joint_damping(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
         self.set_joint_frictionloss(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
 
