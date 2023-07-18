@@ -25,6 +25,8 @@ class RandomEnv(gym.Env):
         self.expose_dr_sampler = False
         self.dr_sampler = []
 
+        self.overrides = {}
+
     
     # Methods to override in child envs:
     # ----------------------------
@@ -55,6 +57,11 @@ class RandomEnv(gym.Env):
             Optionally keeps track of the sampled
             random parameters.
         """
+        # Potentially override this method with a gym wrapper
+        if 'set_random_task' in self.overrides:
+            self.overrides['set_random_task']()
+            return
+
         task = self.sample_task()
         if self.expose_dr_sampler:
             self.dr_sampler.append(task)
