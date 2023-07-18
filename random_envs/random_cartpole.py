@@ -411,6 +411,9 @@ class RandomCartPoleEnv(RandomEnv):
             self.viewer.close()
             self.viewer = None
 
+    def set_verbosity(self, verbose):
+        self.verbose = verbose
+
 
 gym.envs.register(
     id="RandomCartPole-v0",
