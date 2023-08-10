@@ -97,7 +97,8 @@ class RandomCartPoleEnv(RandomEnv):
 
     def __init__(self,
                  inverted=False,
-                 continuous_action=False):
+                 continuous_action=False,
+                 version='hard'):
         """
             inverted: bool
                       If set, the task is an inverted cartpole pendulum
@@ -106,10 +107,15 @@ class RandomCartPoleEnv(RandomEnv):
             continuous_action: bool
                                actions in range [-1, 1] are expected, which
                                get translated to forces exerted on the cart.
+
+            version: str
+                     how many dynamics parameters to randomize.
+                     easy: 2, hard: 4
         """
         RandomEnv.__init__(self)
 
         self.inverted = inverted
+        self.version = version
 
         self.gravity = 9.8
         self.cart_mass = 1.0
@@ -164,16 +170,26 @@ class RandomCartPoleEnv(RandomEnv):
 
 
         ### Domain randomization
-        self.dyn_ind_to_name = {0: 'gravity',
-                                1: 'cart_mass',
-                                2: 'pole_mass',
-                                3: 'pole_length'}
-        self.original_task = np.array([
-                                self.gravity,
-                                self.cart_mass,
-                                self.pole_mass,
-                                self.pole_length
-                            ])
+        if version == 'hard':
+            self.dyn_ind_to_name = {0: 'gravity',
+                                    1: 'cart_mass',
+                                    2: 'pole_mass',
+                                    3: 'pole_length'}
+            self.original_task = np.array([
+                                    self.gravity,
+                                    self.cart_mass,
+                                    self.pole_mass,
+                                    self.pole_length
+                                ])
+
+        elif version == 'easy':
+            self.dyn_ind_to_name = {0: 'gravity',
+                                    1: 'pole_length'}
+            self.original_task = np.array([
+                                    self.gravity,
+                                    self.pole_length
+                                ])
+
         self.nominal_values = np.copy(self.original_task)
 
         self.task_dim = self.original_task.shape[0]
@@ -217,23 +233,35 @@ class RandomCartPoleEnv(RandomEnv):
         return lowest_value[self.dyn_ind_to_name[index]]
 
     def get_task(self):
-        gravity = self.gravity
-        cart_mass = self.cart_mass
-        pole_mass = self.pole_mass
-        pole_length = self.pole_length
+        """Returns current dynamics parameters"""
+        full_task = {'gravity': self.gravity,
+                     'cart_mass': self.cart_mass,
+                     'pole_mass': self.pole_mass,
+                     'pole_length': self.pole_length}
 
-        return np.array([gravity, cart_mass, pole_mass, pole_length])
+        # Return current task based on how many parameters are randomized
+        curr_task = []
+        for index, task_name in self.dyn_ind_to_name.items():
+            curr_task.append(full_task[task_name])
+
+        return np.array(curr_task)
 
     def set_task(self, *task):
         """Set dynamics parameters
 
             task : arr of [gravity, cart_mass, pole_mass, pole_length]
         """
-        self.gravity = task[0]
-        self.cart_mass = task[1]
-        self.pole_mass = task[2]
-        self.pole_length = task[3]
-        self.total_mass = (self.pole_mass + self.cart_mass)
+        if self.version == 'hard':
+            self.gravity = task[0]
+            self.cart_mass = task[1]
+            self.pole_mass = task[2]
+            self.pole_length = task[3]
+            self.total_mass = (self.pole_mass + self.cart_mass)
+        elif self.version == 'easy':
+            self.gravity = task[0]
+            self.pole_length = task[1]
+        else:
+            raise ValueError(f'Given version is not compatible: {version}')
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -416,23 +444,30 @@ class RandomCartPoleEnv(RandomEnv):
 
 
 gym.envs.register(
-    id="RandomCartPole-v0",
+    id="RandomCartPoleHard-v0",
     entry_point="%s:RandomCartPoleEnv" % __name__,
     max_episode_steps=500,
     kwargs={}
 )
 
 gym.envs.register(
-    id="RandomInvertedCartPole-v0",
+    id="RandomInvertedCartPoleHard-v0",
     entry_point="%s:RandomCartPoleEnv" % __name__,
     max_episode_steps=500,
     kwargs={"inverted": True}
 )
 
 gym.envs.register(
-    id="RandomContinuousInvertedCartPole-v0",
+    id="RandomContinuousInvertedCartPoleHard-v0",
     entry_point="%s:RandomCartPoleEnv" % __name__,
     max_episode_steps=500,
     kwargs={"inverted": True, "continuous_action": True}
 )
 
+
+gym.envs.register(
+    id="RandomContinuousInvertedCartPoleEasy-v0",
+    entry_point="%s:RandomCartPoleEnv" % __name__,
+    max_episode_steps=500,
+    kwargs={"inverted": True, "continuous_action": True, "version": "easy"}
+)
