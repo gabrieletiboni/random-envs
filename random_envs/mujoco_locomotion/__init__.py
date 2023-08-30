@@ -8,3 +8,4 @@ from . import random_walker2d_unmodeled
 from . import random_humanoid
 from . import random_humanoid_unmodeled
 from . import random_swimmer
+from . import random_ant
