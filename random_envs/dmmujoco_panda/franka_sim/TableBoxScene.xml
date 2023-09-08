@@ -5,7 +5,7 @@
 {% set with_goal=with_goal | default(False) %}
 {% set display_goal_range=display_goal_range | default(False) %}
 {% set box_com=box_com | default("0.0 0.0 0.0") %}
-{% set box_com_sizey=box_com_sizey | default(0.02) %}
+{% set box_com_sizey=box_com_sizey | default(0.01) %}
 {% set box_mass=box_mass | default(0.7) %}
 {% set box_inertia=box_inertia | default("0.00075 0.00075 0.00075") %}
 
