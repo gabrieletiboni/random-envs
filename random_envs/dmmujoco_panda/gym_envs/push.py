@@ -235,7 +235,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
     @property
     def goal_dist(self):
-        goal_dist = np.sqrt(np.sum((self.box_pos - self.goal_pos)**2))
+        goal_dist = np.sqrt(np.sum((self.box_pos[:2] - self.goal_pos[:2])**2))
         return goal_dist
 
     def reset(self):
