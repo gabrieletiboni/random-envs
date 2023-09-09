@@ -10,6 +10,8 @@ from random_envs.random_env import RandomEnv
 
 class RandomPlane(RandomEnv):
     def __init__(self):
+        RandomEnv.__init__(self)
+
         # Define the observation space (box position)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32)
 
@@ -21,12 +23,12 @@ class RandomPlane(RandomEnv):
         self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
 
         self.init_box_pos_distr = [-0.45, 0.45]
-        self.init_box_vel_distr = [-0.5, 0.5] 
+        self.init_box_vel_distr = [-0.1, 0.1] 
 
         self.gravity = 9.81
         self.timestep = 0.05
         self.box_mass = 1.
-        self.max_force = 5
+        self.max_force = 3.
         self.theta = 0  # Nominal angle (flat plane)
 
         # Observation space
@@ -54,11 +56,17 @@ class RandomPlane(RandomEnv):
         self.preferred_lr = None
         self.reward_threshold = 0
 
+        self.verbose = 0
+
     def reset(self):
-        # Reset the box position and velocity
-        # self.box_pos = np.array([0.0, 0.0], dtype=np.float32)
+        # Reset box position and velocity
         self.box_pos = np.array([np.random.uniform(low=self.init_box_pos_distr[0], high=self.init_box_pos_distr[1]), 0.0], dtype=np.float32)
         self.box_vel = np.array([np.random.uniform(low=self.init_box_vel_distr[0], high=self.init_box_vel_distr[1]), 0.0], dtype=np.float32)
+
+        # Sample new dynamics
+        if self.dr_training:
+            self.set_random_task()
+
         return self.box_pos
 
     def step(self, action):
@@ -115,7 +123,9 @@ class RandomPlane(RandomEnv):
         plt.xlim([-1, 1])
         plt.ylim([-1, 1])
         plt.grid(True)
-        plt.show()
+        plt.show(block=False)
+        plt.pause(0.8)
+        plt.close()
 
     def get_task(self):
         return np.array([self.theta])
@@ -151,10 +161,13 @@ class RandomPlane(RandomEnv):
         }
         return upper_value[self.dyn_ind_to_name[index]]
 
+    def set_verbosity(self, verbose):
+        self.verbose = verbose
+
 
 gym.envs.register(
     id="RandomPlane-v0",
     entry_point="%s:RandomPlane" % __name__,
-    max_episode_steps=100,
+    max_episode_steps=50,
     kwargs={}
 )
