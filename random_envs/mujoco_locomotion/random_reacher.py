@@ -18,6 +18,11 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
         MujocoEnv.__init__(self, 'reacher.xml', 4)
         utils.EzPickle.__init__(self)
 
+        # Set default values in the middle of the search space
+        default_mass = np.mean(list(self.get_search_bounds_mean(name='body0mass')))
+        default_damping = np.mean(list(self.get_search_bounds_mean(name='damping0')))
+        self.set_task(*[default_mass, default_mass, default_damping, default_damping])
+
         self.original_masses = np.copy(self.sim.model.body_mass[1:3])
         self.original_damping = np.copy(self.sim.model.dof_damping[:2])
         self.nominal_values = np.concatenate([self.original_masses,self.original_damping])
@@ -35,17 +40,20 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
         self.reward_threshold = 0  # temp
         
 
-    def get_search_bounds_mean(self, index):
+    def get_search_bounds_mean(self, index=-1, name=None):
         """Get search bounds for the mean of the parameters optimized,
         the stdev bounds are set accordingly in dropo.
         """
         search_bounds_mean = {
-               'body0mass': (0.005, 0.2),
-               'body1mass': (0.005, 0.2),
-               'damping0': (0.01, 10),
-               'damping1': (0.01, 10)
+               'body0mass': (0.005, 1),
+               'body1mass': (0.005, 1),
+               'damping0': (0.01, 50),
+               'damping1': (0.01, 50)
         }
-        return search_bounds_mean[self.dyn_ind_to_name[index]]
+        if name is None:
+            return search_bounds_mean[self.dyn_ind_to_name[index]]
+        else:
+            return search_bounds_mean[name]
 
     def get_task_lower_bound(self, index):
         """Returns lowest feasible value for each dynamics
