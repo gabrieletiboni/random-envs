@@ -31,7 +31,7 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
 
         self.dyn_ind_to_name = {0: 'body0mass', 1: 'body1mass', 2: 'damping0', 3: 'damping1'}
 
-        self.preferred_lr = None
+        self.preferred_lr = 0.001
         self.reward_threshold = 0  # temp
         
 
