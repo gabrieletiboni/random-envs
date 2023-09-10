@@ -58,8 +58,8 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
                'damping1': (0.01, 50),
                'frictionloss0': (0.01, 10),
                'frictionloss1': (0.01, 10),
-               'gravityx': (-1000, 1000),
-               'gravityy': (-1000, 1000)
+               'gravityx': (-100, 100),
+               'gravityy': (-100, 100)
         }
         if name is None:
             return search_bounds_mean[self.dyn_ind_to_name[index]]
@@ -78,8 +78,8 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
                     'damping1':  0.001,
                     'frictionloss0': 0.,
                     'frictionloss1': 0.,
-                    'gravityx': -5000,
-                    'gravityy': -5000
+                    'gravityx': -1000,
+                    'gravityy': -1000
         }
 
         return lowest_value[self.dyn_ind_to_name[index]]
