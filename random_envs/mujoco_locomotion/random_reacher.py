@@ -102,7 +102,7 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
     def step(self, a):
         vec = self.get_body_com("fingertip") - self.get_current_goal_3d()
         reward_dist = -np.linalg.norm(vec)
-        reward_ctrl = -np.square(a).sum()
+        reward_ctrl = 0  # -np.square(a).sum()
         reward = reward_dist + reward_ctrl
 
         self.do_simulation(a, self.frame_skip)
@@ -157,12 +157,12 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
 
     def get_current_goal_3d(self):
         goal_body_id = self.sim.model.body_name2id("target")
-        return self.sim.model.body_pos[goal_body_id][:]
+        return np.array(self.sim.model.body_pos[goal_body_id][:])
 
     def get_current_goal(self):
         if self.goal is None:
             goal_body_id = self.sim.model.body_name2id("target")
-            return self.sim.model.body_pos[goal_body_id][:2]
+            return np.array(self.sim.model.body_pos[goal_body_id][:2])
         else:
             return self.goal
 
