@@ -135,7 +135,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.preferred_lr = 0.001
 
         self.wandb_extra_metrics = {'last_dist_from_target': 'box_goal_distance'}
-        self.success_metric = 'last_dist_from_target'
+        self.success_metric = 'negative_last_dist_from_target'
 
 
     def get_contacts(self):
@@ -172,6 +172,7 @@ class PandaPushEnv(PandaGymEnvironment):
 
         delta_dist_from_target = self.goal_dist - self.last_dist_from_target
         self.last_dist_from_target = self.goal_dist
+        self.negative_last_dist_from_target = -self.last_dist_from_target
         info[f"goal_dist"] = self.goal_dist
         info[f"dgoal_dist"] = delta_dist_from_target
 
