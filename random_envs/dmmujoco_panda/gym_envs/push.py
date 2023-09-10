@@ -135,6 +135,7 @@ class PandaPushEnv(PandaGymEnvironment):
         self.preferred_lr = 0.001
 
         self.wandb_extra_metrics = {'last_dist_from_target': 'box_goal_distance'}
+        self.success_metric = 'last_dist_from_target'
 
 
     def get_contacts(self):
