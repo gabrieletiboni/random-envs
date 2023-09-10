@@ -116,11 +116,15 @@ class PandaGymEnvironment(RandomEnv):
         # self.set_joint_damping(np.array([1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023]))
         # self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
 
+        ### Set initial values for dynamics that do NOT require rebuilding the model.
         # Real Panda torque interface automatically compensates for damping and friction. Se we can train with lower values.
-        friction_bounds = self.get_search_bounds_mean(name='friction')
-        self.set_box_friction(np.array([(friction_bounds[0] + friction_bounds[1])/2]))
-        self.set_joint_damping(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
-        self.set_joint_frictionloss(np.array([0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125, 0.1125]))
+        friction_init = np.mean(list(self.get_search_bounds_mean(name='friction')))
+        self.set_box_friction(np.array([friction_init]))
+        damping_init = np.mean(list(self.get_search_bounds_mean(name='damping0')))
+        self.set_joint_damping(np.repeat(damping_init, 7))
+        frictionloss_init = np.mean(list(self.get_search_bounds_mean(name='frictionloss0')))
+        self.set_joint_frictionloss(np.repeat(frictionloss_init, 7))
+
 
     def _rebuild_model(self):
         self._initialize_simulation()

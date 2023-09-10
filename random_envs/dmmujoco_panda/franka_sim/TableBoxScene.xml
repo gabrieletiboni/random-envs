@@ -2,6 +2,8 @@
 {% import 'utils.xml' as utils %}
 
 <!-- If the default values are changed, the corresponding get_default_task() method has to be changed accordingly -->
+<!-- Actually, get_default_task() retrieves values that are automatically generated. -->
+<!-- But the search_mean_bounds should be centered around the defaults, and this is not enforced automatically -->
 {% set with_goal=with_goal | default(False) %}
 {% set display_goal_range=display_goal_range | default(False) %}
 {% set box_com=box_com | default("0.0 0.0 0.0") %}
