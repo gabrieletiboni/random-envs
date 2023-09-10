@@ -44,7 +44,11 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
         self.dyn_ind_to_name = {0: 'body0mass', 1: 'body1mass', 2: 'damping0', 3: 'damping1', 4: 'gravityx', 5: 'gravityy'}
 
         self.preferred_lr = 0.001
-        self.reward_threshold = 0  # temp
+        self.reward_threshold = -6  # temp
+
+        self.wandb_extra_metrics = {'negative_last_dist_from_target': 'neg_dist_from_goal'}
+        self.success_metric = 'negative_last_dist_from_target'
+        self.negative_last_dist_from_target = None
         
 
     def get_search_bounds_mean(self, index=-1, name=None):
@@ -104,6 +108,8 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
         reward_dist = -np.linalg.norm(vec)
         reward_ctrl = -np.square(a).sum()
         reward = reward_dist + reward_ctrl
+
+        self.negative_last_dist_from_target = reward_dist
 
         self.do_simulation(a, self.frame_skip)
 
