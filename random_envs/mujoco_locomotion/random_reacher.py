@@ -100,9 +100,9 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
 
 
     def step(self, a):
-        vec = self.get_body_com("fingertip") - self.get_current_goal_3d()
+        vec = self.get_body_com("fingertip") - self.get_body_com("target")
         reward_dist = -np.linalg.norm(vec)
-        reward_ctrl = 0  # -np.square(a).sum()
+        reward_ctrl = -np.square(a).sum()
         reward = reward_dist + reward_ctrl
 
         self.do_simulation(a, self.frame_skip)
@@ -122,9 +122,9 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
                 np.cos(theta),
                 np.sin(theta),
                 # self.sim.data.qpos.flat[2:],
-                self.get_current_goal(),
+                self.get_body_com("target")[:2],
                 self.sim.data.qvel.flat[:2],
-                self.get_body_com("fingertip") - self.get_current_goal_3d(),
+                self.get_body_com("fingertip") - self.get_body_com("target"),
             ]
         )
 
@@ -155,9 +155,9 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
                 break
         return goal
 
-    def get_current_goal_3d(self):
-        goal_body_id = self.sim.model.body_name2id("target")
-        return np.array(self.sim.model.body_pos[goal_body_id][:])
+    # def get_current_goal_3d(self):
+    #     goal_body_id = self.sim.model.body_name2id("target")
+    #     return np.array(self.sim.model.body_pos[goal_body_id][:])
 
     def get_current_goal(self):
         if self.goal is None:
@@ -165,6 +165,14 @@ class RandomReacherEnv(MujocoEnv, utils.EzPickle):
             return np.array(self.sim.model.body_pos[goal_body_id][:2])
         else:
             return self.goal
+
+    # @property
+    # def fingertip_pos(self):
+    #     """
+    #         return the [x,y,z] of fingertip
+    #     """
+    #     fingertip_id = self.sim.model.body_name2id("fingertip")
+    #     return np.array(self.sim.model.body_pos[fingertip_id][:])
 
     def viewer_setup(self):
         assert self.viewer is not None

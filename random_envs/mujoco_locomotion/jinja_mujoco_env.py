@@ -59,8 +59,6 @@ class MujocoEnv(RandomEnv):
         self.build_model()
         self.endless = False
 
-        self.data = self.sim.data
-
         self.metadata = {
             'render.modes': ['human', 'rgb_array', 'depth_array'],
             'video.frames_per_second': int(np.round(1.0 / self.dt))
@@ -97,6 +95,7 @@ class MujocoEnv(RandomEnv):
         xml = self.renderer.render_template(self.model_path, **self.model_args)
         self.model = mujoco_py.load_model_from_xml(xml)
         self.sim = mujoco_py.MjSim(self.model)
+        self.data = self.sim.data  # self.data is hardly ever used, but kept for compatiblity. Make sure you update it every time the model is rebuilt.
         self.viewer = None
         self._viewers = {}
 
@@ -230,7 +229,7 @@ class MujocoEnv(RandomEnv):
         return self.viewer
 
     def get_body_com(self, body_name):
-        return self.data.get_body_xpos(body_name)
+        return self.sim.data.get_body_xpos(body_name)
 
     def state_vector(self):
         return np.concatenate([
