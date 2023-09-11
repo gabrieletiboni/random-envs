@@ -633,9 +633,9 @@ class PandaPushEnv(PandaGymEnvironment):
         """
         search_bounds_mean = {
                'mass': (0.2, 1.2),
-               'friction':  (0.05, .6),
-               'frictionx': (0.05, .6),
-               'frictiony': (0.05, .6),
+               'friction':  (0.025, .3),
+               'frictionx': (0.025, .3),
+               'frictiony': (0.025, .3),
                'frictiont': (0.001, 0.5),
                'solref0': (0.001, 0.02),
                'solref1': (0.4, 1.),
