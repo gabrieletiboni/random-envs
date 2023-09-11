@@ -157,14 +157,15 @@ class RandomAntEnv(MujocoEnv, utils.EzPickle):
 
 
     def reset_model(self):
+        # Before potentially re-building the model
+        if self.dr_training:
+            self.set_random_task() # Sample new dynamics
+
         qpos = self.init_qpos + self.np_random.uniform(
             size=self.model.nq, low=-0.1, high=0.1
         )
         qvel = self.init_qvel + self.np_random.standard_normal(self.model.nv) * 0.1
         self.set_state(qpos, qvel)
-
-        if self.dr_training:
-            self.set_random_task() # Sample new dynamics
 
         return self._get_obs()
 
