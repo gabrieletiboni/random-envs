@@ -119,15 +119,16 @@ class RandomSwimmerEnv(MujocoEnv, utils.EzPickle):
         return obs
 
     def reset_model(self):
+        # Before potentially re-building the model
+        if self.dr_training:
+            self.set_random_task() # Sample new dynamics
+
         self.set_state(
             self.init_qpos
             + self.np_random.uniform(low=-0.1, high=0.1, size=self.model.nq),
             self.init_qvel
             + self.np_random.uniform(low=-0.1, high=0.1, size=self.model.nv),
         )
-
-        if self.dr_training:
-            self.set_random_task() # Sample new dynamics
 
         return self._get_obs()
 
