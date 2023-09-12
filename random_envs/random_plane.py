@@ -58,7 +58,7 @@ class RandomPlane(RandomEnv):
 
         self.wandb_extra_metrics = {'time_at_the_center': 'time_at_the_center'}
         self.success_metric = 'time_at_the_center'
-        self.time_at_the_center = 0
+        self.time_at_the_center = 0.
         self.center_is_within = 0.05  # distance from center to be considered "in the center"
 
         self.verbose = 0
@@ -73,7 +73,7 @@ class RandomPlane(RandomEnv):
         self.box_vel = np.array([np.random.uniform(low=self.init_box_vel_distr[0], high=self.init_box_vel_distr[1]), 0.0], dtype=np.float32)
 
         # Reset time at the center
-        self.time_at_the_center = 0
+        self.time_at_the_center = 0.
 
         return self.box_pos
 
@@ -95,9 +95,9 @@ class RandomPlane(RandomEnv):
         info = {'is_at_the_center': self.is_at_the_center(self.box_pos)}
 
         if self.is_at_the_center(self.box_pos):
-            self.time_at_the_center += 1
+            self.time_at_the_center += 1.
         else:
-            self.time_at_the_center = 0
+            self.time_at_the_center = 0.
 
         # print('acc_robot:', acceleration)
         # print('box pos robot:', self.box_pos)
