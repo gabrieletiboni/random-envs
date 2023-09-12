@@ -54,18 +54,26 @@ class RandomPlane(RandomEnv):
         self.stdev_task = np.zeros(self.task_dim)
 
         self.preferred_lr = None
-        self.reward_threshold = 0
+        self.reward_threshold = 0  # temp
+
+        self.wandb_extra_metrics = {'time_at_the_center': 'time_at_the_center'}
+        self.success_metric = 'time_at_the_center'
+        self.time_at_the_center = 0
+        self.center_is_within = 0.05  # distance from center to be considered "in the center"
 
         self.verbose = 0
 
     def reset(self):
+        # Sample new dynamics
+        if self.dr_training:
+            self.set_random_task()
+
         # Reset box position and velocity
         self.box_pos = np.array([np.random.uniform(low=self.init_box_pos_distr[0], high=self.init_box_pos_distr[1]), 0.0], dtype=np.float32)
         self.box_vel = np.array([np.random.uniform(low=self.init_box_vel_distr[0], high=self.init_box_vel_distr[1]), 0.0], dtype=np.float32)
 
-        # Sample new dynamics
-        if self.dr_training:
-            self.set_random_task()
+        # Reset time at the center
+        self.time_at_the_center = 0
 
         return self.box_pos
 
@@ -81,9 +89,15 @@ class RandomPlane(RandomEnv):
         self.box_vel = self.box_vel +  acceleration*self.timestep
         self.box_pos = self.box_pos + self.box_vel*self.timestep
 
-        reward = self._get_reward(self.box_pos)
-        done = self.has_fallen(self.box_pos)
-        info = {}
+        has_fallen = self.has_fallen(self.box_pos)
+        reward = self._get_reward(self.box_pos) - (self.fall_penalty() if has_fallen else 0.)
+        done = has_fallen
+        info = {'is_at_the_center': self.is_at_the_center(self.box_pos)}
+
+        if self.is_at_the_center(self.box_pos):
+            self.time_at_the_center += 1
+        else:
+            self.time_at_the_center = 0
 
         # print('acc_robot:', acceleration)
         # print('box pos robot:', self.box_pos)
@@ -99,6 +113,12 @@ class RandomPlane(RandomEnv):
 
     def has_fallen(self, x):
         return x[0] > 0.5 or x[0] < -0.5
+
+    def fall_penalty(self):
+        return 1.
+
+    def is_at_the_center(self, x):
+        return x[0] <= self.center_is_within and x[0] >= -self.center_is_within
 
     def from_robot_to_world(self, x):
         assert x.shape[0] == 2
