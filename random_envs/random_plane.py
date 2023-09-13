@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from random_envs.random_env import RandomEnv
 
 class RandomPlane(RandomEnv):
-    def __init__(self):
+    def __init__(self, difficulty='hard'):
         RandomEnv.__init__(self)
 
         # Define the observation space (box position)
@@ -22,8 +22,14 @@ class RandomPlane(RandomEnv):
         self.box_pos = np.array([0.0, 0.0], dtype=np.float32)
         self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
 
-        self.init_box_pos_distr = [-0.45, 0.45]
-        self.init_box_vel_distr = [-0.1, 0.1] 
+        if difficulty == 'hard':
+            self.init_box_pos_distr = [-0.45, 0.45]
+            self.init_box_vel_distr = [-0.1, 0.1]
+        elif difficulty == 'easy':
+            self.init_box_pos_distr = [-0.05, 0.05]
+            self.init_box_vel_distr = [-0.0, 0.0] 
+        else:
+            raise ValueError(f'Difficulty value is not supported: {difficulty}')
 
         self.gravity = 9.81
         self.timestep = 0.05
@@ -190,4 +196,11 @@ gym.envs.register(
     entry_point="%s:RandomPlane" % __name__,
     max_episode_steps=50,
     kwargs={}
+)
+
+gym.envs.register(
+    id="RandomPlaneEasy-v0",
+    entry_point="%s:RandomPlane" % __name__,
+    max_episode_steps=50,
+    kwargs={'difficulty': 'easy'}
 )
