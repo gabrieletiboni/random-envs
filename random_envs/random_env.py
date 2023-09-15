@@ -126,7 +126,11 @@ class RandomEnv(gym.Env):
         elif dr_type == 'gaussian':
             self._set_gaussian_distribution(distr)
         elif dr_type == 'fullgaussian':
+            # First temporary implementation of multivariateGaussian
             self._set_fullgaussian_distribution(distr['mean'], distr['cov'])
+        elif dr_type == 'multivariateGaussian':
+            # Second temporary implementation of multivariateGaussian
+            self._set_multivariateGaussian_distribution(distr['mean'], distr['cov'], (distr['low'] if 'low' in distr else None), (distr['high'] if 'high' in distr else None) )
         elif dr_type == 'beta':
             self._set_beta_distribution(distr)
         else:
@@ -166,6 +170,15 @@ class RandomEnv(gym.Env):
         self.mean_task[:] = mean
         self.cov_task = np.copy(cov)
         return
+
+    def _set_multivariateGaussian_distribution(self, mean, cov, low=None, high=None):
+        assert isinstance(mean, np.ndarray) and isinstance(cov, np.ndarray)
+        self.distr_low_bound = low # used for denormalization
+        self.distr_high_bound = high # used for denormalization
+        self.mean_task[:] = mean
+        self.cov_task = np.copy(cov)
+        return
+
 
     def _set_beta_distribution(self, distr):
         """
@@ -257,6 +270,34 @@ class RandomEnv(gym.Env):
             sample = self.denormalize_parameters(sample)
             return sample
 
+        elif self.sampling == 'multivariateGaussian':
+            # Assumes the sampled parameters have been linearly normalized with slope
+            # from [self.min_task, self.max_task] to [0, 1]
+            ndims = self.mean_task.shape[0]
+
+            # Retrieve dynamics parameters boundaries, if defined
+            if hasattr(self, 'get_task_lower_bound'):
+                lower_bounds = [self.get_task_lower_bound(i) for i in range(ndims)]
+            else:
+                lower_bound = [-np.inf for i in range(ndims)]
+
+            if hasattr(self, 'get_task_upper_bound'):
+                upper_bounds = [self.get_task_upper_bound(i) for i in range(ndims)]
+            else:
+                upper_bounds = [np.inf for i in range(ndims)]
+
+            valid = False
+            while not valid:
+                sample = np.random.multivariate_normal(self.mean_task, self.cov_task)
+
+                # Check whether all values are within their corresponding feasible boundaries
+                valid = np.all( np.concatenate([np.greater(sample, lower_bounds),np.less(sample, upper_bounds)]) )
+            
+            sample = self._denormalize_parameters_multivariateGaussian(sample)
+            
+            return sample
+
+
         elif self.sampling == 'beta':
             sample = []
             for i in range(len(self.distr)):
@@ -269,6 +310,10 @@ class RandomEnv(gym.Env):
             raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr.')
 
         return
+
+    def _denormalize_parameters_multivariateGaussian(self, sample):
+        if self.distr_low_bound is not None and self.distr_high_bound is not None:
+            return sample * (self.distr_high_bound - self.distr_low_bound) + self.distr_low_bound
 
     def denormalize_parameters(self, parameters):
         """Denormalize parameters back to their original space
