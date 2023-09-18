@@ -281,12 +281,14 @@ class PandaGymEnvironment(RandomEnv):
             acc = action * self.joint_qacc_max
             delta_vel = acc * self.dt
 
-            # Clip velocity
-            end_vel = self.joint_vel + delta_vel
-            end_vel = np.clip(end_vel, self.joint_qvel_min, self.joint_qvel_max)
-            true_acc = (end_vel - self.joint_vel)/self.dt
+            joint_vel = self.joint_vel + np.random.randn(7)*0.0011
 
-            return self.joint_pos, self.joint_vel, true_acc
+            # Clip velocity
+            end_vel = joint_vel + delta_vel
+            end_vel = np.clip(end_vel, self.joint_qvel_min, self.joint_qvel_max)
+            true_acc = (end_vel - joint_vel)/self.dt
+
+            return self.joint_pos, joint_vel, true_acc
         
         elif self.controller.ctrl_format == 'action':
             return action

@@ -27,8 +27,8 @@ class AccelerationIntegrator(Repeater):
 
     def __call__(self, cmd):
         cur_pos, cur_vel, acc = cmd
-        if self.velocity_noise:
-            cur_vel += np.random.randn(7)*0.0011
+        # if self.velocity_noise:
+        #     cur_vel += np.random.randn(7)*0.0011
         dt = self._dt
         for n in range(self.num):
             t = n * dt
