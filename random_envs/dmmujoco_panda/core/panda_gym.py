@@ -310,7 +310,7 @@ class PandaGymEnvironment(RandomEnv):
         self.joint_qvel_max = joint_qvel_limits
 
         # qacc limits
-        self.joint_qacc_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])*0.2
+        self.joint_qacc_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])*0.3
 
     @property
     def dt(self):
