@@ -750,8 +750,15 @@ class PandaPushEnv(PandaGymEnvironment):
         self.init_joint_damping = self.get_joint_damping()
         self.init_joint_frictionloss = self.get_joint_frictionloss()
         self.init_box_table_friction = np.array(self.get_pair_friction("box", "table"))
-        self.init_box_com = self.model_kwargs["box_com"] if "box_com" in self.model_kwargs else np.array([0.0, 0.0])
+        self.init_box_com = self._from_str_to_float(self.model_kwargs["box_com"]) if "box_com" in self.model_kwargs else np.array([0.0, 0.0, 0.0])
         self.init_box_mass = self.get_box_mass()
+
+
+    def _from_str_to_float(self, string):
+        values = []
+        for item in string.split():
+            values.append(float(item))
+        return values
 
 
 

@@ -95,6 +95,15 @@ class PandaGymEnvironment(RandomEnv):
         self.verbose = verbose
 
     def _initialize_simulation(self):
+        ### Set initial values for dynamics that REQUIRE rebuilding the model
+        self.model_kwargs['box_mass'] = np.mean(list(self.get_search_bounds_mean(name='mass')))
+        init_box_com = [
+                        np.mean(list(self.get_search_bounds_mean(name='comx'))),
+                        np.mean(list(self.get_search_bounds_mean(name='comy'))),
+                        0.
+                       ]
+        self.model_kwargs["box_com"] = " ".join([str(elem) for elem in init_box_com])
+
         parsed_xml = self.parse_xml(self.model_file, **self.model_kwargs)
         # self.dump_string_to_file(parsed_xml, './parsed_xml.xml')
         
@@ -116,7 +125,7 @@ class PandaGymEnvironment(RandomEnv):
         # self.set_joint_damping(np.array([1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023, 1.6514023]))
         # self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
 
-        ### Set initial values for dynamics that do NOT require rebuilding the model.
+        ### Set initial values for dynamics that DO NOT require rebuilding the model.
         # Real Panda torque interface automatically compensates for damping and friction. Se we can train with lower values.
         friction_init = np.mean(list(self.get_search_bounds_mean(name='friction')))
         self.set_box_friction(np.array([friction_init]))
