@@ -27,6 +27,7 @@ class PandaPushEnv(PandaGymEnvironment):
                  action_interpolator_kwargs: dict,
                  controller: Controller,
                  controller_kwargs: dict,
+                 qacc_factor: float,
                  task_reward="guide",
                  norm_reward=False,
                  command_type="acc",
@@ -80,6 +81,7 @@ class PandaPushEnv(PandaGymEnvironment):
                                      model_kwargs=model_kwargs,
                                      action_interpolator=action_interpolator,
                                      action_interpolator_kwargs=action_interpolator_kwargs,
+                                     qacc_factor=qacc_factor,
                                      controller=controller,
                                      controller_kwargs=controller_kwargs,
                                      control_penalty_coeff=control_penalty_coeff,
@@ -817,7 +819,9 @@ box_height_jitters = [0.0, 0.005]
 box_noise_stdevs = [0.0, 0.002]
 jvel_noise_stdevs = [0.0, 0.0011]
 clip_accelerations = [True, False]
+qacc_factors = [None, 0.2, 0.3, 0.4, 0.5, 0.6, 1.0]
 contact_penalties = [False, True]
+ctrl_pen_coeffs = [None, 0.5, 1.0, 2.0]
 
 # Simple env for debugging
 register_panda_env(
@@ -853,38 +857,41 @@ for dyn_type in randomized_dynamics:
                     for box_height_jitter in box_height_jitters:
                         for goal_name, goal_range in goal_ranges.items():
                             for clip_acc in clip_accelerations:
-                                for box_noise_stdev in box_noise_stdevs:
-                                    for jvel_noise_stdev in jvel_noise_stdevs:
-                                        for contact_pen in contact_penalties:
-                                            register_panda_env(
-                                                    id=f"DMPandaPush-FFPosCtrl{'-ContPen' if contact_pen else ''}{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}-v0",
-                                                    entry_point="%s:PandaPushEnv" % __name__,
-                                                    model_file="TableBoxScene.xml",
-                                                    controller=FFJointPositionController,
-                                                    controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
-                                                    action_interpolator=AccelerationIntegrator,
-                                                    action_interpolator_kwargs={"velocity_noise": True},
-                                                    model_kwargs = {"actuator_type": "torque",
-                                                                    "with_goal": True,
-                                                                    "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
-                                                                    "goal_range_center": (goal_range[0]+goal_range[1])/2,
-                                                                    "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
-                                                                    "init_joint_pos": panda_start_jpos,
-                                                                    "box_size": [0.05, 0.05, 0.04]},
-                                                    max_episode_steps=300,
-                                                    env_kwargs = {"command_type": "acc",
-                                                                  "contact_penalties": contact_pen,
-                                                                  "control_penalty_coeff": 1.,
-                                                                  "task_reward": task_reward,
-                                                                  "norm_reward": norm_reward,
-                                                                  "goal_low": goal_range[0],
-                                                                  "goal_high": goal_range[1],
-                                                                  "init_jpos_jitter": init_jpos_jitter,
-                                                                  "init_box_jitter": init_box_jitter,
-                                                                  "box_height_jitter": box_height_jitter,
-                                                                  "box_noise_stdev": box_noise_stdev,
-                                                                  "jvel_noise_stdev": jvel_noise_stdev,
-                                                                  "rotation_in_obs": "sincosz",
-                                                                  "randomized_dynamics": dyn_type
-                                                        }
-                                                    )
+                                for qacc_factor in qacc_factors:
+                                    for ctrl_pen_coeff in ctrl_pen_coeffs:
+                                        for box_noise_stdev in box_noise_stdevs:
+                                            for jvel_noise_stdev in jvel_noise_stdevs:
+                                                for contact_pen in contact_penalties:
+                                                    register_panda_env(
+                                                            id=f"DMPandaPush-FFPosCtrl{'-ContPen' if contact_pen else ''}{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}{('-QAcc'+str(qacc_factor) if qacc_factor is not None else '')}{('-CtrlPen'+str(ctrl_pen_coeff) if ctrl_pen_coeff is not None else '')}-v0",
+                                                            entry_point="%s:PandaPushEnv" % __name__,
+                                                            model_file="TableBoxScene.xml",
+                                                            controller=FFJointPositionController,
+                                                            controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
+                                                            action_interpolator=AccelerationIntegrator,
+                                                            action_interpolator_kwargs={"velocity_noise": True},
+                                                            model_kwargs = {"actuator_type": "torque",
+                                                                            "with_goal": True,
+                                                                            "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
+                                                                            "goal_range_center": (goal_range[0]+goal_range[1])/2,
+                                                                            "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
+                                                                            "init_joint_pos": panda_start_jpos,
+                                                                            "box_size": [0.05, 0.05, 0.04]},
+                                                            max_episode_steps=300,
+                                                            env_kwargs = {"command_type": "acc",
+                                                                          "qacc_factor": qacc_factor if qacc_factor is not None else 0.3,  # default to 0.3
+                                                                          "contact_penalties": contact_pen,
+                                                                          "control_penalty_coeff": ctrl_pen_coeff if ctrl_pen_coeff is not None else 1.,  # default to 1.
+                                                                          "task_reward": task_reward,
+                                                                          "norm_reward": norm_reward,
+                                                                          "goal_low": goal_range[0],
+                                                                          "goal_high": goal_range[1],
+                                                                          "init_jpos_jitter": init_jpos_jitter,
+                                                                          "init_box_jitter": init_box_jitter,
+                                                                          "box_height_jitter": box_height_jitter,
+                                                                          "box_noise_stdev": box_noise_stdev,
+                                                                          "jvel_noise_stdev": jvel_noise_stdev,
+                                                                          "rotation_in_obs": "sincosz",
+                                                                          "randomized_dynamics": dyn_type
+                                                                }
+                                                            )

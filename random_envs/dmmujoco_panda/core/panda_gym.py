@@ -37,6 +37,7 @@ class PandaGymEnvironment(RandomEnv):
                  model_kwargs: dict,
                  action_interpolator: Repeater,
                  action_interpolator_kwargs: dict,
+                 qacc_factor: float,
                  controller: Controller,
                  controller_kwargs: dict,
                  n_frames=1,
@@ -61,6 +62,7 @@ class PandaGymEnvironment(RandomEnv):
         self.default_camera_config = default_camera_config
         self.n_frames = n_frames
         self._initialize_simulation()
+        self.qacc_factor = qacc_factor
         self._set_limits()
 
         assert init_jpos_jitter == 0.0 and init_jvel_jitter == 0.0, 'TODO: they are not yet implemented'
@@ -310,7 +312,7 @@ class PandaGymEnvironment(RandomEnv):
         self.joint_qvel_max = joint_qvel_limits
 
         # qacc limits
-        self.joint_qacc_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])*0.3
+        self.joint_qacc_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])*self.qacc_factor
 
     @property
     def dt(self):
