@@ -275,25 +275,14 @@ class RandomEnv(gym.Env):
             # from [self.min_task, self.max_task] to [0, 1]
             ndims = self.mean_task.shape[0]
 
-            # Retrieve dynamics parameters boundaries, if defined
-            if hasattr(self, 'get_task_lower_bound'):
-                lower_bounds = [self.get_task_lower_bound(i) for i in range(ndims)]
-            else:
-                lower_bound = [-np.inf for i in range(ndims)]
-
-            if hasattr(self, 'get_task_upper_bound'):
-                upper_bounds = [self.get_task_upper_bound(i) for i in range(ndims)]
-            else:
-                upper_bounds = [np.inf for i in range(ndims)]
-
             valid = False
             while not valid:
                 sample = np.random.multivariate_normal(self.mean_task, self.cov_task)
 
-                # Check whether all values are within their corresponding feasible boundaries
-                valid = np.all( np.concatenate([np.greater(sample, lower_bounds),np.less(sample, upper_bounds)]) )
-            
-            sample = self._denormalize_parameters_multivariateGaussian(sample)
+                sample = self._denormalize_parameters_multivariateGaussian(sample) # denormalize before checking boundaries
+
+                # Check whether all values are within the search space (truncated multivariate gaussian)
+                valid = np.all( np.concatenate([np.greater(sample, self.distr_low_bound),np.less(sample, self.distr_high_bound)]) )
             
             return sample
 
