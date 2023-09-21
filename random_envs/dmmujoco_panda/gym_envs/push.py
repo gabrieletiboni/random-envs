@@ -47,12 +47,14 @@ class PandaPushEnv(PandaGymEnvironment):
                  jvel_noise_stdev=0.0,
                  rotation_in_obs="none",
                  randomized_dynamics='mf',
+                 absolute_acc_pen=False,
                  model_kwargs={}):
         """
             Currently ignored parameters:
                 - command_type
         """
         self.search_space_id = int(search_space_id)
+        self.absolute_acc_pen = absolute_acc_pen
 
         self.goal_low = goal_low
         self.goal_high = goal_high

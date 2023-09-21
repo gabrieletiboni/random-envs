@@ -186,7 +186,11 @@ class PandaGymEnvironment(RandomEnv):
         #         self.joint_qpos_max, square_coeff=0., betas=(0.03, 0.03)).sum()
         position_penalty = 0
         velocity_penalty = square_penalty_limit(self.joint_vel, self.joint_qvel_min, self.joint_qvel_max, square_coeff=5.).sum()
-        acceleration_penalty = soft_tanh_limit(self.joint_acc,
+        if self.absolute_acc_pen:
+            acceleration_penalty = soft_tanh_limit(self.joint_acc,
+                -self.joint_qacc_max/self.qacc_factor, self.joint_qacc_max/self.qacc_factor, betas=(0.2, 0.2), square_coeff=0.5).sum()
+        else:
+            acceleration_penalty = soft_tanh_limit(self.joint_acc,
                 -self.joint_qacc_max, self.joint_qacc_max, betas=(0.2, 0.2), square_coeff=0.5).sum()
         control_penalty = velocity_penalty + acceleration_penalty + position_penalty  # each term is bounded between [0, 1]
         control_penalty *= -self.control_penalty_coeff
