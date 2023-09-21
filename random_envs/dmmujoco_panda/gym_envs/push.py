@@ -28,7 +28,9 @@ class PandaPushEnv(PandaGymEnvironment):
                  controller: Controller,
                  controller_kwargs: dict,
                  qacc_factor: float,
-                 task_reward="guide",
+                 control_penalty_coeff: float,  # 1.
+                 task_reward: str,  # "guide"
+                 search_space_id: int,  # 0
                  norm_reward=False,
                  command_type="acc",
                  contact_penalties=False,
@@ -44,13 +46,13 @@ class PandaPushEnv(PandaGymEnvironment):
                  box_noise_stdev=0.0,
                  jvel_noise_stdev=0.0,
                  rotation_in_obs="none",
-                 control_penalty_coeff=1.,
                  randomized_dynamics='mf',
                  model_kwargs={}):
         """
             Currently ignored parameters:
                 - command_type
         """
+        self.search_space_id = int(search_space_id)
 
         self.goal_low = goal_low
         self.goal_high = goal_high
@@ -633,31 +635,116 @@ class PandaPushEnv(PandaGymEnvironment):
             MEAN of the parameters optimized, the variance
             .is set accordingly
         """
-        search_bounds_mean = {
-               'mass': (0.2, 0.6),
-               'friction':  (0.025, .5),
-               'frictionx': (0.025, .3),
-               'frictiony': (0.025, .3),
-               'frictiont': (0.001, 0.5),
-               'solref0': (0.001, 0.02),
-               'solref1': (0.4, 1.),
-               'comx': (-0.05, 0.05),
-               'comy': (-0.05, 0.05),
-               'damping0': (0.5, 2.5),
-               'damping1': (0.5, 2.5),
-               'damping2': (0.5, 2.5),
-               'damping3': (0.5, 2.5),
-               'damping4': (0.5, 2.5),
-               'damping5': (0.5, 2.5),
-               'damping6': (0.5, 2.5),
-               'frictionloss0': (1., 3.),
-               'frictionloss1': (1., 3.),
-               'frictionloss2': (1., 3.),
-               'frictionloss3': (1., 3.),
-               'frictionloss4': (1., 3.),
-               'frictionloss5': (1., 3.),
-               'frictionloss6': (1., 3.),
-        }
+        if self.search_space_id == 0:
+            # Difficult, starts with high frictions
+            search_bounds_mean = {
+                   'mass': (0.2, 0.6),
+                   'friction':  (0.025, .5),
+                   'frictionx': (0.025, .3),
+                   'frictiony': (0.025, .3),
+                   'frictiont': (0.001, 0.5),
+                   'solref0': (0.001, 0.02),
+                   'solref1': (0.4, 1.),
+                   'comx': (-0.05, 0.05),
+                   'comy': (-0.05, 0.05),
+                   'damping0': (0.5, 2.5),
+                   'damping1': (0.5, 2.5),
+                   'damping2': (0.5, 2.5),
+                   'damping3': (0.5, 2.5),
+                   'damping4': (0.5, 2.5),
+                   'damping5': (0.5, 2.5),
+                   'damping6': (0.5, 2.5),
+                   'frictionloss0': (1., 3.),
+                   'frictionloss1': (1., 3.),
+                   'frictionloss2': (1., 3.),
+                   'frictionloss3': (1., 3.),
+                   'frictionloss4': (1., 3.),
+                   'frictionloss5': (1., 3.),
+                   'frictionloss6': (1., 3.),
+            }
+        elif self.search_space_id == 1:
+            # Wider, includes low frictions
+            search_bounds_mean = {
+                   'mass': (0.2, 0.6),
+                   'friction':  (0.025, .5),
+                   'frictionx': (0.025, .3),
+                   'frictiony': (0.025, .3),
+                   'frictiont': (0.001, 0.5),
+                   'solref0': (0.001, 0.02),
+                   'solref1': (0.4, 1.),
+                   'comx': (-0.05, 0.05),
+                   'comy': (-0.05, 0.05),
+                   'damping0': (0.025, 2.5),
+                   'damping1': (0.025, 2.5),
+                   'damping2': (0.025, 2.5),
+                   'damping3': (0.025, 2.5),
+                   'damping4': (0.025, 2.5),
+                   'damping5': (0.025, 2.5),
+                   'damping6': (0.025, 2.5),
+                   'frictionloss0': (0.025, 3.),
+                   'frictionloss1': (0.025, 3.),
+                   'frictionloss2': (0.025, 3.),
+                   'frictionloss3': (0.025, 3.),
+                   'frictionloss4': (0.025, 3.),
+                   'frictionloss5': (0.025, 3.),
+                   'frictionloss6': (0.025, 3.),
+            }
+        elif self.search_space_id == 2:
+            # FOR UDR: EASY FIXED FRICTIONS
+            search_bounds_mean = {
+                   'mass': (0.2, 0.6),
+                   'friction':  (0.025, .5),
+                   'frictionx': (0.025, .3),
+                   'frictiony': (0.025, .3),
+                   'frictiont': (0.001, 0.5),
+                   'solref0': (0.001, 0.02),
+                   'solref1': (0.4, 1.),
+                   'comx': (-0.05, 0.05),
+                   'comy': (-0.05, 0.05),
+                   'damping0': (0.1, 0.1),
+                   'damping1': (0.1, 0.1),
+                   'damping2': (0.1, 0.1),
+                   'damping3': (0.1, 0.1),
+                   'damping4': (0.1, 0.1),
+                   'damping5': (0.1, 0.1),
+                   'damping6': (0.1, 0.1),
+                   'frictionloss0': (0.1, 0.1),
+                   'frictionloss1': (0.1, 0.1),
+                   'frictionloss2': (0.1, 0.1),
+                   'frictionloss3': (0.1, 0.1),
+                   'frictionloss4': (0.1, 0.1),
+                   'frictionloss5': (0.1, 0.1),
+                   'frictionloss6': (0.1, 0.1),
+            }
+        elif self.search_space_id == 3:
+            # FOR UDR: MEDIUM FIXED FRICTIONS
+            search_bounds_mean = {
+                   'mass': (0.2, 0.6),
+                   'friction':  (0.025, .5),
+                   'frictionx': (0.025, .3),
+                   'frictiony': (0.025, .3),
+                   'frictiont': (0.001, 0.5),
+                   'solref0': (0.001, 0.02),
+                   'solref1': (0.4, 1.),
+                   'comx': (-0.05, 0.05),
+                   'comy': (-0.05, 0.05),
+                   'damping0': (0.6, 0.6),
+                   'damping1': (0.6, 0.6),
+                   'damping2': (0.6, 0.6),
+                   'damping3': (0.6, 0.6),
+                   'damping4': (0.6, 0.6),
+                   'damping5': (0.6, 0.6),
+                   'damping6': (0.6, 0.6),
+                   'frictionloss0': (0.8, 0.8),
+                   'frictionloss1': (0.8, 0.8),
+                   'frictionloss2': (0.8, 0.8),
+                   'frictionloss3': (0.8, 0.8),
+                   'frictionloss4': (0.8, 0.8),
+                   'frictionloss5': (0.8, 0.8),
+                   'frictionloss6': (0.8, 0.8),
+            }
+        else:
+            raise ValueError(f'Search space id  {self.search_space_id} is not valid.')
         if name is None:
             return search_bounds_mean[self.dyn_ind_to_name[index]]
         else:
@@ -812,16 +899,16 @@ goal_ranges = {
 
 randomized_dynamics = ['m', 'mf', 'mft', 'mfcom', 'mfcomy', 'com', 'comy', 'mftcom', 'mfcomd', 'd', 'd_fl', 'mfcomy_d_fl', 'mf0comy_d_fl']
 norm_reward_bool=[True, False]
-task_rewards = ['target', 'guide']
+# task_rewards = ['target', 'guide']
 init_jpos_jitters = [0.0, 0.02]
 init_box_jitters = [0.0, 0.01]
 box_height_jitters = [0.0, 0.005]
 box_noise_stdevs = [0.0, 0.002]
 jvel_noise_stdevs = [0.0, 0.0011]
 clip_accelerations = [True, False]
-qacc_factors = [None, 0.2, 0.3, 0.4, 0.5, 0.6, 1.0]
+# qacc_factors = [None, 0.2, 0.3, 0.4, 0.5, 0.6, 1.0]
 contact_penalties = [False, True]
-ctrl_pen_coeffs = [None, 0.5, 1.0, 2.0]
+# ctrl_pen_coeffs = [None, 0.1, 0.2, 0.5, 1.0, 2.0]
 
 # Simple env for debugging
 register_panda_env(
@@ -851,47 +938,48 @@ register_panda_env(
 
 for dyn_type in randomized_dynamics:
     for norm_reward in norm_reward_bool:
-        for task_reward in task_rewards:
-            for init_jpos_jitter in init_jpos_jitters:
-                for init_box_jitter in init_box_jitters:
-                    for box_height_jitter in box_height_jitters:
-                        for goal_name, goal_range in goal_ranges.items():
-                            for clip_acc in clip_accelerations:
-                                for qacc_factor in qacc_factors:
-                                    for ctrl_pen_coeff in ctrl_pen_coeffs:
-                                        for box_noise_stdev in box_noise_stdevs:
-                                            for jvel_noise_stdev in jvel_noise_stdevs:
-                                                for contact_pen in contact_penalties:
-                                                    register_panda_env(
-                                                            id=f"DMPandaPush-FFPosCtrl{'-ContPen' if contact_pen else ''}{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-Guide' if task_reward == 'guide' else '')}{('-NormReward' if norm_reward else '')}{('-QAcc'+str(qacc_factor) if qacc_factor is not None else '')}{('-CtrlPen'+str(ctrl_pen_coeff) if ctrl_pen_coeff is not None else '')}-v0",
-                                                            entry_point="%s:PandaPushEnv" % __name__,
-                                                            model_file="TableBoxScene.xml",
-                                                            controller=FFJointPositionController,
-                                                            controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
-                                                            action_interpolator=AccelerationIntegrator,
-                                                            action_interpolator_kwargs={"velocity_noise": True},
-                                                            model_kwargs = {"actuator_type": "torque",
-                                                                            "with_goal": True,
-                                                                            "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
-                                                                            "goal_range_center": (goal_range[0]+goal_range[1])/2,
-                                                                            "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
-                                                                            "init_joint_pos": panda_start_jpos,
-                                                                            "box_size": [0.05, 0.05, 0.04]},
-                                                            max_episode_steps=300,
-                                                            env_kwargs = {"command_type": "acc",
-                                                                          "qacc_factor": qacc_factor if qacc_factor is not None else 0.3,  # default to 0.3
-                                                                          "contact_penalties": contact_pen,
-                                                                          "control_penalty_coeff": ctrl_pen_coeff if ctrl_pen_coeff is not None else 1.,  # default to 1.
-                                                                          "task_reward": task_reward,
-                                                                          "norm_reward": norm_reward,
-                                                                          "goal_low": goal_range[0],
-                                                                          "goal_high": goal_range[1],
-                                                                          "init_jpos_jitter": init_jpos_jitter,
-                                                                          "init_box_jitter": init_box_jitter,
-                                                                          "box_height_jitter": box_height_jitter,
-                                                                          "box_noise_stdev": box_noise_stdev,
-                                                                          "jvel_noise_stdev": jvel_noise_stdev,
-                                                                          "rotation_in_obs": "sincosz",
-                                                                          "randomized_dynamics": dyn_type
-                                                                }
-                                                            )
+        # for task_reward in task_rewards:
+        for init_jpos_jitter in init_jpos_jitters:
+            for init_box_jitter in init_box_jitters:
+                for box_height_jitter in box_height_jitters:
+                    for goal_name, goal_range in goal_ranges.items():
+                        for clip_acc in clip_accelerations:
+                            # for qacc_factor in qacc_factors:
+                                # for ctrl_pen_coeff in ctrl_pen_coeffs:
+                                for box_noise_stdev in box_noise_stdevs:
+                                    for jvel_noise_stdev in jvel_noise_stdevs:
+                                        for contact_pen in contact_penalties:
+                                            register_panda_env(
+                                                    id=f"DMPandaPush-FFPosCtrl{'-ContPen' if contact_pen else ''}{'-ClipAcc' if clip_acc else ''}-{goal_name}-{dyn_type}{'-JVelNoise'+str(jvel_noise_stdev) if jvel_noise_stdev != 0. else ''}{'-BoxNoise'+str(box_noise_stdev) if box_noise_stdev != 0. else ''}{'-InitJpos'+str(init_jpos_jitter) if init_jpos_jitter != 0. else ''}{'-InitBox'+str(init_box_jitter) if init_box_jitter != 0. else ''}{'-BoxHeight'+str(box_height_jitter) if box_height_jitter != 0. else ''}{('-NormReward' if norm_reward else '')}-v0",
+                                                    entry_point="%s:PandaPushEnv" % __name__,
+                                                    model_file="TableBoxScene.xml",
+                                                    controller=FFJointPositionController,
+                                                    controller_kwargs={"clip_acceleration": clip_acc, "velocity_noise": True},
+                                                    action_interpolator=AccelerationIntegrator,
+                                                    action_interpolator_kwargs={"velocity_noise": True},
+                                                    model_kwargs = {"actuator_type": "torque",
+                                                                    "with_goal": True,
+                                                                    "display_goal_range": True if (goal_range[1][0]-goal_range[0][0])/2 > 0. else False,  # display only if randomizing the goal
+                                                                    "goal_range_center": (goal_range[0]+goal_range[1])/2,
+                                                                    "goal_range_size": np.array([(goal_range[1][0]-goal_range[0][0])/2, (goal_range[1][1]-goal_range[0][1])/2]),
+                                                                    "init_joint_pos": panda_start_jpos,
+                                                                    "box_size": [0.05, 0.05, 0.04]},
+                                                    max_episode_steps=300,
+                                                    env_kwargs = {"command_type": "acc",
+                                                                  # "qacc_factor": 0.3,
+                                                                  "contact_penalties": contact_pen,
+                                                                  # "control_penalty_coeff": 1.,
+                                                                  # "task_reward": 'target',
+                                                                  "norm_reward": norm_reward,
+                                                                  "goal_low": goal_range[0],
+                                                                  "goal_high": goal_range[1],
+                                                                  "init_jpos_jitter": init_jpos_jitter,
+                                                                  "init_box_jitter": init_box_jitter,
+                                                                  "box_height_jitter": box_height_jitter,
+                                                                  "box_noise_stdev": box_noise_stdev,
+                                                                  "jvel_noise_stdev": jvel_noise_stdev,
+                                                                  "rotation_in_obs": "sincosz",
+                                                                  "randomized_dynamics": dyn_type,
+                                                                  # "search_space_id": 0
+                                                        }
+                                                    )
