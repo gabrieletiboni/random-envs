@@ -61,7 +61,7 @@ class PandaGymEnvironment(RandomEnv):
         self.camera_name = camera_name
         self.default_camera_config = default_camera_config
         self.n_frames = n_frames
-        self._initialize_simulation()
+        self._initialize_simulation(init_values_to_default=True)
         self.qacc_factor = qacc_factor
         self._set_limits()
 
@@ -96,15 +96,19 @@ class PandaGymEnvironment(RandomEnv):
     def set_verbosity(self, verbose):
         self.verbose = verbose
 
-    def _initialize_simulation(self):
+    def _initialize_simulation(self, init_values_to_default=False):
         ### Set initial values for dynamics that REQUIRE rebuilding the model
-        self.model_kwargs['box_mass'] = np.mean(list(self.get_search_bounds_mean(name='mass')))
-        init_box_com = [
-                        np.mean(list(self.get_search_bounds_mean(name='comx'))),
-                        np.mean(list(self.get_search_bounds_mean(name='comy'))),
-                        0.
-                       ]
-        self.model_kwargs["box_com"] = " ".join([str(elem) for elem in init_box_com])
+        if init_values_to_default:
+            # This should not be done when DR is true, as it would overwrite the task that
+            # DR put in self.model_kwargs. It's only meant to be done at the beginning to set
+            # the default task.
+            self.model_kwargs['box_mass'] = np.mean(list(self.get_search_bounds_mean(name='mass')))
+            init_box_com = [
+                            np.mean(list(self.get_search_bounds_mean(name='comx'))),
+                            np.mean(list(self.get_search_bounds_mean(name='comy'))),
+                            0.
+                           ]
+            self.model_kwargs["box_com"] = " ".join([str(elem) for elem in init_box_com])
 
         parsed_xml = self.parse_xml(self.model_file, **self.model_kwargs)
         # self.dump_string_to_file(parsed_xml, './parsed_xml.xml')
@@ -128,7 +132,8 @@ class PandaGymEnvironment(RandomEnv):
         # self.set_joint_frictionloss(np.array([1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265, 1.43666265]))
 
         ### Set initial values for dynamics that DO NOT require rebuilding the model.
-        # Real Panda torque interface automatically compensates for damping and friction. Se we can train with lower values.
+        # These values can be set even when DR is true, because they will be overwritten
+        # after this function has finished.
         friction_init = np.mean(list(self.get_search_bounds_mean(name='friction')))
         self.set_box_friction(np.array([friction_init]))
         damping_init = np.mean(list(self.get_search_bounds_mean(name='damping0')))
