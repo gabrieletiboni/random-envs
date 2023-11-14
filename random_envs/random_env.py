@@ -133,6 +133,8 @@ class RandomEnv(gym.Env):
             self._set_multivariateGaussian_distribution(distr['mean'], distr['cov'], (distr['low'] if 'low' in distr else None), (distr['high'] if 'high' in distr else None) )
         elif dr_type == 'beta':
             self._set_beta_distribution(distr)
+        elif dr_type == 'particle':
+            self._set_particle_distribution(distr)
         else:
             raise Exception('Unknown dr_type:'+str(dr_type))
 
@@ -147,6 +149,11 @@ class RandomEnv(gym.Env):
             return self.distr
         else:
             return None
+
+    def _set_particle_distribution(self, particles):
+        if not torch.is_tensor(particles):
+            particles = torch.tensor(particles)
+        self.particles = particles
 
     def _set_udr_distribution(self, bounds):
         for i in range(len(bounds)//2):
@@ -295,6 +302,11 @@ class RandomEnv(gym.Env):
                 sample.append(value.item())
 
             return np.array(sample)
+
+        elif self.sampling == 'particle':
+            sample = self.particles[torch.randint(0, self.particles.shape[0], (1,))[0], :]  # sample one particle
+            return sample.numpy()
+
         else:
             raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr.')
 
