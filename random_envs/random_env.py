@@ -5,6 +5,7 @@ import gym
 import numpy as np
 import torch
 from torch.distributions.beta import Beta
+from scipy.stats import truncnorm
 
 class RandomEnv(gym.Env):
     """Superclass for all environments
@@ -123,6 +124,12 @@ class RandomEnv(gym.Env):
             self._set_udr_distribution(distr)
         elif dr_type == 'truncnorm':
             self._set_truncnorm_distribution(distr)
+        elif dr_type == 'independentTruncatedGaussian':
+            # Second implementation of truncnorm. This one has
+            # mean and cov that are standardized in space [0, 1],
+            # and use low and high parameters to denormalize samples
+            # The distribution is truncated in [0, 1].
+            self._set_indTruncatedGaussian_distribution(distr['mean'], distr['cov'], (distr['low'] if 'low' in distr else None), (distr['high'] if 'high' in distr else None) )
         elif dr_type == 'gaussian':
             self._set_gaussian_distribution(distr)
         elif dr_type == 'fullgaussian':
@@ -182,6 +189,14 @@ class RandomEnv(gym.Env):
         assert isinstance(mean, np.ndarray) and isinstance(cov, np.ndarray)
         self.distr_low_bound = low # used for denormalization
         self.distr_high_bound = high # used for denormalization
+        self.mean_task[:] = mean
+        self.cov_task = np.copy(cov)
+        return
+
+    def _set_indTruncatedGaussian_distribution(self, mean, cov, low=None, high=None):
+        assert isinstance(mean, np.ndarray) and isinstance(cov, np.ndarray)
+        self.distr_low_bound = low  # used for denormalization
+        self.distr_high_bound = high  # used for denormalization
         self.mean_task[:] = mean
         self.cov_task = np.copy(cov)
         return
@@ -291,6 +306,25 @@ class RandomEnv(gym.Env):
                 # Check whether all values are within the search space (truncated multivariate gaussian)
                 valid = np.all( np.concatenate([np.greater(sample, self.distr_low_bound),np.less(sample, self.distr_high_bound)]) )
             
+            return sample
+
+        elif self.sampling == 'independentTruncatedGaussian':
+            ndims = self.mean_task.shape[0]
+            sample = []
+            for i in range(ndims):
+                trunc_m, trunc_M = 0, 1  # truncated in normalized space [0, 1]
+                loc, scale = self.mean_task[i], np.sqrt(self.cov_task[i])
+
+                a, b = (trunc_m - loc) / scale, (trunc_M - loc) / scale  # a, b are expressed in terms of how many st.devs aways
+                sample_dim = truncnorm.rvs(a, b, loc=loc, scale=scale, size=1)
+
+                # Denormalize sample, as the distribution is defined in [0, 1]
+                m, M = self.distr_low_bound[i], self.distr_high_bound[i]
+                sample_dim = sample_dim * (M - m) + m
+
+                sample.append(sample_dim)
+
+            sample = np.array(sample).ravel()
             return sample
 
 
