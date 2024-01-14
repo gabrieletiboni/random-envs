@@ -13,8 +13,9 @@ class RandomEnv(gym.Env):
         of dynamics parameters
     """
 
-    def __init__(self):
-        gym.Env.__init__(self)
+    def __init__(self, no_gym_init=False):
+        if not no_gym_init:
+            gym.Env.__init__(self)
 
         self.nominal_values = None
         self.sampling = None
@@ -63,10 +64,29 @@ class RandomEnv(gym.Env):
             self.overrides['set_random_task']()
             return
 
-        task = self.sample_task()
+        task = self._sample_task()
         if self.expose_dr_sampler:
             self.dr_sampler.append(task)
         self.set_task(*task)
+
+    def sample_random_task(self):
+        """Sample random parameters
+
+            Same as set_random_task but avoids setting the task
+            explicitly. Two separate methods have been designed for
+            flexibility with envs that rely heavily on set_random_task and
+            for which custom overrides have already been made.
+        """
+        # Potentially override this method with a gym wrapper
+        if 'set_random_task' in self.overrides:
+            self.overrides['set_random_task']()
+            return
+
+        task = self._sample_task()
+        if self.expose_dr_sampler:
+            self.dr_sampler.append(task)
+
+        return task
 
     def set_dr_training(self, flag):
         """
@@ -236,10 +256,13 @@ class RandomEnv(gym.Env):
         return min_task, max_task
 
     def sample_tasks(self, num_tasks=1):
-        return np.stack([self.sample_task() for _ in range(num_tasks)])
+        return np.stack([self._sample_task() for _ in range(num_tasks)])
 
-    def sample_task(self):
-        """Sample random dynamics parameters"""
+    def _sample_task(self):
+        """Sample random dynamics parameters.
+            Meant to be used internally. External interfaces that use this method
+            are `set_random_task` and `sample_random_task`
+        """
         if self.sampling == 'uniform':
             return np.random.uniform(self.min_task, self.max_task, self.min_task.shape)
 
@@ -342,7 +365,7 @@ class RandomEnv(gym.Env):
             return sample.numpy()
 
         else:
-            raise ValueError('sampling value of random env needs to be set before using sample_task() or set_random_task(). Set it by uploading a DR distr.')
+            raise ValueError('sampling value of random env needs to be set before using _sample_task() or set_random_task(). Set it by uploading a DR distr.')
 
         return
 
