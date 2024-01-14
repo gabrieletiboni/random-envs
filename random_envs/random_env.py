@@ -78,15 +78,17 @@ class RandomEnv(gym.Env):
             for which custom overrides have already been made.
         """
         # Potentially override this method with a gym wrapper
-        if 'set_random_task' in self.overrides:
-            self.overrides['set_random_task']()
-            return
+        if 'sample_random_task' in self.overrides:
+            return self.overrides['sample_random_task']()
 
         task = self._sample_task()
         if self.expose_dr_sampler:
             self.dr_sampler.append(task)
 
         return task
+
+    def get_random_task(self):
+        return self._sample_task()
 
     def set_dr_training(self, flag):
         """
