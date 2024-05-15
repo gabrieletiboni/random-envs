@@ -21,8 +21,8 @@ class Random2DNavigation(RandomEnv):
 
         # Define the observation space (width, hight, h_vel, v_vel)
         self.observation_space = spaces.Box(
-            low=np.array([-0.5, 0.0, -np.inf, -np.inf]),
-            high=np.array([0.5, 1.2, np.inf, np.inf]),
+            low=np.array([-0.5, 0.0, -np.inf, -np.inf], dtype=np.float32),
+            high=np.array([0.5, 1.2, np.inf, np.inf], dtype=np.float32),
             shape=(4,),
             dtype=np.float32,
         )
