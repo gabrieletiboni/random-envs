@@ -150,7 +150,7 @@ class Random2DNavigation(RandomEnv):
 
         self.box_pos = self.box_pos + self.box_vel * self.timestep
 
-        reward = self._get_reward(self.box_pos) - (300.0 / 200 if has_hit_wall else 0.0)
+        reward = self._get_reward(self.box_pos) - (.0 / 100 if has_hit_wall else 0.0)
         done = has_hit_wall
         info = {"distance_from_goal": self.get_distance(self.box_pos, self.goal)}
 
@@ -160,7 +160,7 @@ class Random2DNavigation(RandomEnv):
         return np.concatenate((self.box_pos, self.box_vel))
 
     def _get_reward(self, x):
-        return (-self.get_distance(x, self.goal) + 0.8) / 200
+        return (-self.get_distance(x, self.goal) + 0.8) / 100
 
     def get_distance(self, position, goal):
         return np.sqrt(np.sum((position - goal) ** 2))
@@ -332,6 +332,6 @@ class Box(Figure):
 gym.envs.register(
     id="Random2DNavigation-v0",
     entry_point="%s:Random2DNavigation" % __name__,
-    max_episode_steps=200,
+    max_episode_steps=100,
     kwargs={},
 )
