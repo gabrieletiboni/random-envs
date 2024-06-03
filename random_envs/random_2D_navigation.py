@@ -14,7 +14,7 @@ class Random2DNavigation(RandomEnv):
     def __init__(
         self,
         vertical_wind=False,
-        init_pos_distr_fraction_h=0.2,
+        init_pos_distr_fraction_h=0.0,
         init_pos_distr_fraction_v=0.0,
     ):
         RandomEnv.__init__(self)
@@ -127,7 +127,7 @@ class Random2DNavigation(RandomEnv):
         )
         self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
 
-        # Reset time at the center
+        # Reset distance from goal
         self.distance_from_goal = self.get_distance(self.box_pos, self.goal)
 
         return self._get_state()
@@ -217,8 +217,8 @@ class Random2DNavigation(RandomEnv):
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized"""
         search_bounds_mean = {
-            "horizontal_wind_force": (-0.5, 0.5),
-            "vertical_wind_force": (-0.5, 0.5),
+            "horizontal_wind_force": (-1, 1.),
+            "vertical_wind_force": (-1., 1.),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 
@@ -228,8 +228,8 @@ class Random2DNavigation(RandomEnv):
         Used for resampling unfeasible values during domain randomization
         """
         lowest_value = {
-            "horizontal_wind_force": -0.5,
-            "vertical_wind_force": -0.5,
+            "horizontal_wind_force": -1.,
+            "vertical_wind_force": -1.,
         }
         return lowest_value[self.dyn_ind_to_name[index]]
 
@@ -239,8 +239,8 @@ class Random2DNavigation(RandomEnv):
         Used for resampling unfeasible values during domain randomization
         """
         upper_value = {
-            "horizontal_wind_force": 0.5,
-            "vertical_wind_force": 0.5,
+            "horizontal_wind_force": 1.,
+            "vertical_wind_force": 1.,
         }
         return upper_value[self.dyn_ind_to_name[index]]
 
