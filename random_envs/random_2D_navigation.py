@@ -339,3 +339,40 @@ gym.envs.register(
     max_episode_steps=100,
     kwargs={},
 )
+
+gym.envs.register(
+    id="Random2DNavigation_r25-v0",
+    entry_point="%s:Random2DNavigation" % __name__,
+    max_episode_steps=100,
+    kwargs={
+        "init_pos_distr_fraction_h": 0.25,
+        "init_pos_distr_fraction_v": 0.25,
+    }
+)
+gym.envs.register(
+    id="Random2DNavigation_r50-v0",
+    entry_point="%s:Random2DNavigation" % __name__,
+    max_episode_steps=100,
+    kwargs={
+        "init_pos_distr_fraction_h": 0.50,
+        "init_pos_distr_fraction_v": 0.50,
+    }
+)
+gym.envs.register(
+    id="Random2DNavigation_r75-v0",
+    entry_point="%s:Random2DNavigation" % __name__,
+    max_episode_steps=100,
+    kwargs={
+        "init_pos_distr_fraction_h": 0.75,
+        "init_pos_distr_fraction_v": 0.75,
+    }
+)
+gym.envs.register(
+    id="Random2DNavigation_r100-v0",
+    entry_point="%s:Random2DNavigation" % __name__,
+    max_episode_steps=100,
+    kwargs={
+        "init_pos_distr_fraction_h": 1.,
+        "init_pos_distr_fraction_v": 1.,
+    }
+)
