@@ -21,8 +21,8 @@ class Random2DNavigation(RandomEnv):
 
         # Define the observation space (width, hight, h_vel, v_vel)
         self.observation_space = spaces.Box(
-            low=np.array([-0.5, 0.0, -np.inf, -np.inf], dtype=np.float32),
-            high=np.array([0.5, 1.2, np.inf, np.inf], dtype=np.float32),
+            low=np.array([-np.inf, -np.inf, -np.inf, -np.inf], dtype=np.float32),
+            high=np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32),
             shape=(4,),
             dtype=np.float32,
         )
@@ -160,10 +160,14 @@ class Random2DNavigation(RandomEnv):
         return np.concatenate((self.box_pos, self.box_vel))
 
     def _get_reward(self, x):
-        return (-self.get_distance(x, self.goal) + 0.8) / 100
+        d = self.get_squared_distance(x, self.goal)
+        return (- d - np.log(d+1e-3) + 0.8) / 100
 
     def get_distance(self, position, goal):
         return np.sqrt(np.sum((position - goal) ** 2))
+
+    def get_squared_distance(self, position, goal):
+        return np.sum((position - goal) ** 2)
 
     def render(self, mode="human"):
         """Render the scene"""
@@ -217,8 +221,8 @@ class Random2DNavigation(RandomEnv):
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized"""
         search_bounds_mean = {
-            "horizontal_wind_force": (-1, 1.),
-            "vertical_wind_force": (-1., 1.),
+            "horizontal_wind_force": (-2., 2.),
+            "vertical_wind_force": (-2., 2.),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
 
@@ -228,8 +232,8 @@ class Random2DNavigation(RandomEnv):
         Used for resampling unfeasible values during domain randomization
         """
         lowest_value = {
-            "horizontal_wind_force": -1.,
-            "vertical_wind_force": -1.,
+            "horizontal_wind_force": -2.,
+            "vertical_wind_force": -2.,
         }
         return lowest_value[self.dyn_ind_to_name[index]]
 
@@ -239,8 +243,8 @@ class Random2DNavigation(RandomEnv):
         Used for resampling unfeasible values during domain randomization
         """
         upper_value = {
-            "horizontal_wind_force": 1.,
-            "vertical_wind_force": 1.,
+            "horizontal_wind_force": 2.,
+            "vertical_wind_force": 2.,
         }
         return upper_value[self.dyn_ind_to_name[index]]
 
