@@ -14,9 +14,13 @@ class Random2DNavigation(RandomEnv):
     def __init__(
         self,
         vertical_wind=False,
+        isd_randomness=None,
         init_pos_distr_fraction_h=0.0,
         init_pos_distr_fraction_v=0.0,
     ):
+        """
+        Setting isd_randomness overwrites the dimension-specific arguments
+        """
         RandomEnv.__init__(self)
 
         # Define the observation space (width, hight, h_vel, v_vel)
@@ -70,6 +74,9 @@ class Random2DNavigation(RandomEnv):
         self.wall_height = 0.9
 
         # this should be controlled
+        if isd_randomness is not None:
+            init_pos_distr_fraction_h = isd_randomness
+            init_pos_distr_fraction_v = isd_randomness
         h = (0.5 - self.hit_wall_epsilon) * init_pos_distr_fraction_h
         v_t = (
             self.wall_height - self.hit_wall_epsilon - self.initial_v_offset
