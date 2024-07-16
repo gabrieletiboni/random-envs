@@ -131,7 +131,6 @@ class Random2DNavigationControlledpos(RandomEnv):
             ],
             dtype=np.float32,
         )
-        self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
 
         # Reset distance from goal
         self.distance_from_goal = self.get_distance(self.box_pos, self.goal)
@@ -220,8 +219,9 @@ class Random2DNavigationControlledpos(RandomEnv):
 
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized"""
+        h_w = (-0.02,0.02) if not 1 in self.dyn_ind_to_name.keys() else (-0.014,0.014)
         search_bounds_mean = {
-            "horizontal_wind_displacement": (-0.014,0.014),
+            "horizontal_wind_displacement": h_w,
             "vertical_wind_displacement": (-0.014, 0.014),
         }
         return search_bounds_mean[self.dyn_ind_to_name[index]]
@@ -231,8 +231,9 @@ class Random2DNavigationControlledpos(RandomEnv):
 
         Used for resampling unfeasible values during domain randomization
         """
+        h_w = -0.02 if not 1 in self.dyn_ind_to_name.keys() else -0.014
         lowest_value = {
-            "horizontal_wind_displacement": -0.014,
+            "horizontal_wind_displacement": h_w,
             "vertical_wind_displacement": -0.014,
         }
         return lowest_value[self.dyn_ind_to_name[index]]
@@ -242,8 +243,9 @@ class Random2DNavigationControlledpos(RandomEnv):
 
         Used for resampling unfeasible values during domain randomization
         """
+        h_w = 0.02 if not 1 in self.dyn_ind_to_name.keys() else 0.014
         upper_value = {
-            "horizontal_wind_displacement": 0.014,
+            "horizontal_wind_displacement": h_w,
             "vertical_wind_displacement": 0.014,
         }
         return upper_value[self.dyn_ind_to_name[index]]
@@ -301,7 +303,8 @@ class HalfPlane(Figure):
 
 class Rectangle(Figure):
     def __init__(self, x0, x1, y0, y1):
-        """A (axis-aligned) rectangle is stored as a list of half planes"""
+        """A (axis-aligned) rectangle is stored as a list of half planes and it is
+        their intersection"""
         self.planes = [
             HalfPlane(x0, "gt", "x"),
             HalfPlane(x1, "lt", "x"),
@@ -312,6 +315,8 @@ class Rectangle(Figure):
         self.values = np.array([x0, x1, y0, y1], dtype=np.float32)
 
     def does_trajectory_hit(self, pos, vel, acc, dt):
+        # a rectangle is the intersection of 4 halplanes:
+        # it is hit if all the halfplanes are hit (logial and)
         a = True
         for x in self.planes:
             a = a and x.does_trajectory_hit(pos, vel, acc, dt)
@@ -337,12 +342,15 @@ class Rectangle(Figure):
 
 class Box(Figure):
     def __init__(self):
+        """A union of rectangles"""
         self.rectangles: list[Rectangle] = []
 
     def add_rectangle(self, rectangle: Rectangle):
         self.rectangles.append(rectangle)
 
     def does_trajectory_hit(self, pos, vel, acc, dt):
+        # a box is a union of rectangles:
+        # it is hit if at least one rectangle is hit (logical or)
         a = False
         for x in self.rectangles:
             a = a or x.does_trajectory_hit(pos, vel, acc, dt)
