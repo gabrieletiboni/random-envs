@@ -192,7 +192,9 @@ class Random2DNavigation(RandomEnv):
         if self.game_display is None:
             pygame.init()
             pygame.display.init()
+            pygame.font.init()
             self.game_display = pygame.display.set_mode((L, L))
+            self.game_font = pygame.font.SysFont('Arial', 10)
         if self.clock is None:
             self.clock = pygame.time.Clock()
         self.game_display.fill(W)
@@ -208,6 +210,8 @@ class Random2DNavigation(RandomEnv):
         left, top = t(*self.goal)
         left, top = int(left), int(top)
         pygame.draw.circle(self.game_display, G, (left, top), 20)
+        text_surface = self.game_font.render("wind: " + str(self.wind), False, (0, 0, 0))
+        self.game_display.blit(text_surface, (0,0))
         pygame.event.pump()
         pygame.display.update()
         self.clock.tick(24)
