@@ -14,7 +14,7 @@ from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 from scipy.stats import truncnorm
 
 class RandomHopperEnv(MujocoEnv, utils.EzPickle):
-    def __init__(self, noisy=False):
+    def __init__(self, noisy=False, isd_randomness=0.0):
         self.original_lengths = np.array([.4, .45, 0.5, .39])
         self.model_args = {"size": list(self.original_lengths)}
 
@@ -44,6 +44,8 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
 
         self.preferred_lr = 0.0005 # --algo Sac -t 5M
         self.reward_threshold = 1750
+
+        self.isd_randomness = isd_randomness
         
 
     def get_search_bounds_mean(self, index):
@@ -111,8 +113,10 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
         return obs
 
     def reset_model(self):
-        qpos = self.init_qpos + self.np_random.uniform(low=-.1, high=.5, size=self.model.nq)
-        qvel = self.init_qvel + self.np_random.uniform(low=-.1, high=.5, size=self.model.nv)
+        low = self.isd_randomness * -0.1
+        high = self.isd_randomness * 0.5
+        qpos = self.init_qpos + self.np_random.uniform(low=low, high=high, size=self.model.nq)
+        qvel = self.init_qvel + self.np_random.uniform(low=low, high=high, size=self.model.nv)
         self.set_state(qpos, qvel)
 
         if self.dr_training:
@@ -154,13 +158,13 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
 
 
 gym.envs.register(
-        id="RandomHopper-v0",
+        id="RandomHopperIsd-v0",
         entry_point="%s:RandomHopperEnv" % __name__,
         max_episode_steps=500
 )
 
 gym.envs.register(
-        id="RandomHopperNoisy-v0",
+        id="RandomHopperNoisyIsd-v0",
         entry_point="%s:RandomHopperEnv" % __name__,
         max_episode_steps=500,
         kwargs={"noisy": True}

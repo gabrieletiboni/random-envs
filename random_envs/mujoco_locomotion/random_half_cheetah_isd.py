@@ -15,7 +15,7 @@ from copy import deepcopy
 import pdb
 
 class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
-    def __init__(self, noisy=False):
+    def __init__(self, noisy=False, isd_randomness = 0.0):
         self.original_lengths = np.array([1., .15, .145, .15, .094, .133, .106, .07])
         self.model_args = {"size": list(self.original_lengths)}
 
@@ -48,6 +48,8 @@ class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
 
         self.preferred_lr = 0.0005 # --algo Sac -t 5M
         self.reward_threshold = 4500
+
+        self.isd_randomness = isd_randomness
 
     def get_search_bounds_mean(self, index):
         """Get search bounds for the mean of the parameters optimized,
@@ -122,8 +124,10 @@ class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
         return obs
 
     def reset_model(self):
-        qpos = self.init_qpos + self.np_random.uniform(low=-.1, high=.5, size=self.model.nq)
-        qvel = self.init_qvel + self.np_random.randn(self.model.nv) * .5
+        low = self.isd_randomness * -0.1
+        high = self.isd_randomness * 0.5
+        qpos = self.init_qpos + self.np_random.uniform(low=low, high=high, size=self.model.nq)
+        qvel = self.init_qvel + self.np_random.randn(self.model.nv) * self.isd_randomness * .5
         self.set_state(qpos, qvel)
 
         if self.dr_training:
@@ -160,13 +164,13 @@ class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
 
 
 gym.envs.register(
-        id="RandomHalfCheetah-v0",
+        id="RandomHalfCheetahIsd-v0",
         entry_point="%s:RandomHalfCheetah" % __name__,
         max_episode_steps=500
 )
 
 gym.envs.register(
-        id="RandomHalfCheetahNoisy-v0",
+        id="RandomHalfCheetahNoisyIsd-v0",
         entry_point="%s:RandomHalfCheetah" % __name__,
         max_episode_steps=500,
         kwargs={"noisy": True}

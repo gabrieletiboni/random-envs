@@ -10,3 +10,5 @@ from . import random_humanoid_unmodeled
 from . import random_swimmer
 from . import random_ant
 from . import random_reacher
+from . import random_hopper_isd
+from . import random_half_cheetah_isd
