@@ -14,7 +14,7 @@ from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 from copy import deepcopy
 import pdb
 
-class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
+class RandomHalfCheetahIsd(MujocoEnv, utils.EzPickle):
     def __init__(self, noisy=False, isd_randomness = 0.0):
         self.original_lengths = np.array([1., .15, .145, .15, .094, .133, .106, .07])
         self.model_args = {"size": list(self.original_lengths)}
@@ -165,13 +165,13 @@ class RandomHalfCheetah(MujocoEnv, utils.EzPickle):
 
 gym.envs.register(
         id="RandomHalfCheetahIsd-v0",
-        entry_point="%s:RandomHalfCheetah" % __name__,
+        entry_point="%s:RandomHalfCheetahIsd" % __name__,
         max_episode_steps=500
 )
 
 gym.envs.register(
         id="RandomHalfCheetahNoisyIsd-v0",
-        entry_point="%s:RandomHalfCheetah" % __name__,
+        entry_point="%s:RandomHalfCheetahIsd" % __name__,
         max_episode_steps=500,
         kwargs={"noisy": True}
 )

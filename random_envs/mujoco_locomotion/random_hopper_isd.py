@@ -13,7 +13,7 @@ from gym import utils
 from random_envs.mujoco_locomotion.jinja_mujoco_env import MujocoEnv
 from scipy.stats import truncnorm
 
-class RandomHopperEnv(MujocoEnv, utils.EzPickle):
+class RandomHopperIsdEnv(MujocoEnv, utils.EzPickle):
     def __init__(self, noisy=False, isd_randomness=0.0):
         self.original_lengths = np.array([.4, .45, 0.5, .39])
         self.model_args = {"size": list(self.original_lengths)}
@@ -159,13 +159,13 @@ class RandomHopperEnv(MujocoEnv, utils.EzPickle):
 
 gym.envs.register(
         id="RandomHopperIsd-v0",
-        entry_point="%s:RandomHopperEnv" % __name__,
+        entry_point="%s:RandomHopperIsdEnv" % __name__,
         max_episode_steps=500
 )
 
 gym.envs.register(
         id="RandomHopperNoisyIsd-v0",
-        entry_point="%s:RandomHopperEnv" % __name__,
+        entry_point="%s:RandomHopperIsdEnv" % __name__,
         max_episode_steps=500,
         kwargs={"noisy": True}
 )
