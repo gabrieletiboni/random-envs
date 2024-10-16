@@ -25,9 +25,9 @@ class Random2DNavigationOnlypos(RandomEnv):
 
         # Define the observation space (width, hight, h_vel, v_vel)
         self.observation_space = spaces.Box(
-            low=np.array([-np.inf, -np.inf], dtype=np.float32),
-            high=np.array([np.inf, np.inf], dtype=np.float32),
-            shape=(2,),
+            low=np.array([-np.inf, -np.inf, -np.inf, -np.inf], dtype=np.float32),
+            high=np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32),
+            shape=(4,),
             dtype=np.float32,
         )
 
@@ -114,6 +114,9 @@ class Random2DNavigationOnlypos(RandomEnv):
         self.clock = None
 
         self.verbose = 0
+    
+    def get_actor_state_mask(self):
+        return [2, 3]
 
     def reset(self):
         # Sample new dynamics
@@ -164,7 +167,7 @@ class Random2DNavigationOnlypos(RandomEnv):
         return self._get_state(), reward, done, info
 
     def _get_state(self):
-        return np.array(self.box_pos)
+        return np.concatenate((self.box_pos, self.box_vel))
 
     def _get_reward(self, x):
         d = self.get_squared_distance(x, self.goal)

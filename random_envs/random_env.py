@@ -51,6 +51,12 @@ class RandomEnv(gym.Env):
     def set_task(self, *task):
         """Set dynamics parameters to <task>"""
         raise NotImplementedError
+    
+    def get_actor_state_mask(self):
+        """Get a list of indexes for the state.
+        These will NOT be observed by the actor.
+        This will be enforced on top of asymmetric history / dynamics."""
+        return []
     # ----------------------------
 
     def set_random_task(self):
