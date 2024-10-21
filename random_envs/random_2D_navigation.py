@@ -15,8 +15,11 @@ class Random2DNavigation(RandomEnv):
         self,
         vertical_wind=False,
         isd_randomness=None,
+        isd_random_vel=False,
         init_pos_distr_fraction_h=0.0,
         init_pos_distr_fraction_v=0.0,
+        init_pos_distr_fraction_vel_v=0.0,
+        init_pos_distr_fraction_vel_h=0.0,
     ):
         """
         Setting isd_randomness overwrites the dimension-specific arguments
@@ -77,11 +80,17 @@ class Random2DNavigation(RandomEnv):
         if isd_randomness is not None:
             init_pos_distr_fraction_h = isd_randomness
             init_pos_distr_fraction_v = isd_randomness
+            if isd_random_vel:
+                init_pos_distr_fraction_vel_v = isd_randomness
+                init_pos_distr_fraction_vel_h = isd_randomness
         h = (0.5 - self.hit_wall_epsilon) * init_pos_distr_fraction_h
         v_t = (
             self.wall_height - self.hit_wall_epsilon - self.initial_v_offset
         ) * init_pos_distr_fraction_v + self.initial_v_offset
         self.init_box_pos_distr = np.array([-h, h, self.initial_v_offset, v_t])
+        # quick one liner, of course the same thing done for position should be done for velocity, ie
+        # separate h and v calculations
+        self.init_box_vel_distr = np.array([-0.5,0.5,-0.5,0.5])*init_pos_distr_fraction_vel_h
 
         # let's make a box out of rectangles
         self.bounding_box = Box()
@@ -132,7 +141,17 @@ class Random2DNavigation(RandomEnv):
             ],
             dtype=np.float32,
         )
-        self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
+        self.box_vel = np.array(
+            [
+                np.random.uniform(
+                    low=self.init_box_vel_distr[0], high=self.init_box_vel_distr[1]
+                ),
+                np.random.uniform(
+                    low=self.init_box_vel_distr[2], high=self.init_box_vel_distr[3]
+                ),
+            ],
+            dtype=np.float32,
+        )
 
         # Reset distance from goal
         self.distance_from_goal = self.get_distance(self.box_pos, self.goal)
@@ -386,4 +405,10 @@ gym.envs.register(
         "init_pos_distr_fraction_h": 1.,
         "init_pos_distr_fraction_v": 1.,
     }
+)
+gym.envs.register(
+    id="Random2DNavigationWithRandomVel-v0",
+    entry_point="%s:Random2DNavigation" % __name__,
+    max_episode_steps=100,
+    kwargs={"isd_random_vel": True},
 )
