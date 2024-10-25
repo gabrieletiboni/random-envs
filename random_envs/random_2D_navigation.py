@@ -5,10 +5,10 @@ from gym import spaces, logger
 from gym.utils import seeding
 import numpy as np
 import matplotlib.pyplot as plt
-import pygame
 
 from random_envs.random_env import RandomEnv
 from .random_2D_nav_utils.geometry import Random2DNavigationBox
+from .random_2D_nav_utils.rendering import Random2DNavRenderer
 
 
 
@@ -93,8 +93,7 @@ class Random2DNavigation(RandomEnv):
         # separate h and v calculations
         self.init_box_vel_distr = np.array([-0.5,0.5,-0.5,0.5])*init_pos_distr_fraction_vel_h
 
-        self.game_display = None
-        self.clock = None
+        self.game_renderer = None
 
         self.verbose = 0
 
@@ -170,49 +169,13 @@ class Random2DNavigation(RandomEnv):
         return np.sum((position - goal) ** 2)
 
     def render(self, mode="human"):
-        """Render the scene"""
-        L = 800
-        P = 100  # padding
-        W = (255, 255, 255)
-        G = (0, 255, 0)
-        B = (0, 0, 0)
-        BL = (0, 0, 255)
-        SCALE = (L - P) / 1.2
-
-        def t(x, y):
-            return L / 2 + x * SCALE, (L - P) - y * SCALE + P / 2
-
-        if self.game_display is None:
-            pygame.init()
-            pygame.display.init()
-            pygame.font.init()
-            self.game_display = pygame.display.set_mode((L, L))
-            self.game_font = pygame.font.SysFont('Arial', 10)
-        if self.clock is None:
-            self.clock = pygame.time.Clock()
-        self.game_display.fill(W)
-        for r in self.bounding_box.rectangles:
-            left, top = t(r.values[0], r.values[3])
-            left, top = int(left), int(top)
-            width = int((r.values[1] - r.values[0]) * SCALE)
-            height = int((r.values[3] - r.values[2]) * SCALE)
-            pygame.draw.rect(self.game_display, B, (left, top, width, height))
-        left, top = t(*self.box_pos)
-        left, top = int(left), int(top)
-        pygame.draw.circle(self.game_display, BL, (left, top), 20)
-        left, top = t(*self.goal)
-        left, top = int(left), int(top)
-        pygame.draw.circle(self.game_display, G, (left, top), 20)
-        text_surface = self.game_font.render("wind: " + str(self.wind), False, (0, 0, 0))
-        self.game_display.blit(text_surface, (0,0))
-        pygame.event.pump()
-        pygame.display.update()
-        self.clock.tick(24)
+        if self.game_renderer is None:
+            self.game_renderer = Random2DNavRenderer()
+        self.game_renderer.render(self.bounding_box, self.box_pos, self.goal, self.wind)
 
     def close(self):
-        if self.game_display is not None:
-            pygame.display.quit()
-            pygame.quit()
+        if self.game_renderer is not None:
+            self.game_renderer.close()
 
     def get_task(self):
         i = 2 if 1 in self.dyn_ind_to_name.keys() else 1
