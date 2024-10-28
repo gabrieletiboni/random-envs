@@ -3,6 +3,7 @@ import threading
 import numpy as np
 import time, os
 from .geometry import Box
+from .dynamics import AbstractRandom2DNavigationDynamics
 
 class Random2DNavRenderer():
     def game_loop(self):
@@ -37,7 +38,7 @@ class Random2DNavRenderer():
         self.quit.set()
         self.pygame_thread.join()
     
-    def render(self, bounding_box: Box, box_pos: np.ndarray, goal: np.ndarray, wind):
+    def render(self, bounding_box: Box, dynamics: AbstractRandom2DNavigationDynamics):
         """Render the scene"""
         L = 800
         P = 100  # padding
@@ -46,6 +47,10 @@ class Random2DNavRenderer():
         B = (0, 0, 0)
         BL = (0, 0, 255)
         SCALE = (L - P) / 1.2
+
+        box_pos = dynamics.box_pos
+        goal = dynamics.goal
+        wind = dynamics.wind
 
         def t(x, y):
             return L / 2 + x * SCALE, (L - P) - y * SCALE + P / 2
