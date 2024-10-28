@@ -12,6 +12,7 @@ from .random_2D_nav_utils.dynamics import Random2DNavigationDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationWithRandomvelDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationOnlyposDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposDynamics
+from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposCircularWindDynamics
 
 
 class Random2DNavigation(RandomEnv):
@@ -98,7 +99,7 @@ class Random2DNavigation(RandomEnv):
 
 class Random2DNavigationWithRandomvel(Random2DNavigation):
     def _build_dynamics(self):
-        return Random2DNavigationWithRandomvel()
+        return Random2DNavigationWithRandomvelDynamics()
 
 class Random2DNavigationOnlypos(Random2DNavigation):
     def _build_dynamics(self):
@@ -108,6 +109,9 @@ class Random2DNavigationControlledpos(Random2DNavigation):
     def _build_dynamics(self):
         return Random2DNavigationControlledposDynamics()
 
+class Random2DNavigationControlledposCircularWind(Random2DNavigation):
+    def _build_dynamics(self):
+        return Random2DNavigationControlledposCircularWindDynamics()
 
 
 gym.envs.register(
@@ -134,6 +138,13 @@ gym.envs.register(
 gym.envs.register(
     id="Random2DNavigationControlledpos-v0",
     entry_point="%s:Random2DNavigationControlledpos" % __name__,
+    max_episode_steps=100,
+    kwargs={},
+)
+
+gym.envs.register(
+    id="Random2DNavigationControlledposCircularWind-v0",
+    entry_point="%s:Random2DNavigationControlledposCircularWind" % __name__,
     max_episode_steps=100,
     kwargs={},
 )
