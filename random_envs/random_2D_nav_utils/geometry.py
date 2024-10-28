@@ -4,6 +4,9 @@ class Figure:
     def does_trajectory_hit(self, pos, vel, acc, dt):
         raise NotImplementedError
 
+    def does_line_hit(self, pos1, pos2):
+        raise NotImplementedError
+
 
 class HalfPlane(Figure):
     def __init__(self, value, relation="gt", variable="x"):
@@ -40,6 +43,13 @@ class HalfPlane(Figure):
 
         return 0 < zero_one < dt or 0 < zero_two < dt
 
+    def does_line_hit(self, pos1, pos2):
+        if (pos1[self.variable] - self.value) * self.relation <= 0 and np.sign(
+            pos1[self.variable] - self.value
+        ) == np.sign(pos2[self.variable] - self.value):
+            return False
+        return True
+
 
 class Rectangle(Figure):
     def __init__(self, x0, x1, y0, y1):
@@ -59,6 +69,12 @@ class Rectangle(Figure):
         for x in self.planes:
             a = a and x.does_trajectory_hit(pos, vel, acc, dt)
             if not a: break
+        return a
+
+    def does_line_hit(self, pos1, pos2):
+        a = True
+        for x in self.planes:
+            a = a and x.does_line_hit(pos1, pos2)
         return a
 
     @staticmethod
@@ -87,6 +103,12 @@ class Box(Figure):
         for x in self.rectangles:
             a = a or x.does_trajectory_hit(pos, vel, acc, dt)
             if a: break
+        return a
+
+    def does_line_hit(self, pos1, pos2):
+        a = False
+        for x in self.rectangles:
+            a = a or x.does_line_hit(pos1, pos2)
         return a
 
 

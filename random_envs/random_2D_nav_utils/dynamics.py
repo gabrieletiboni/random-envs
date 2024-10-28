@@ -259,10 +259,33 @@ class Random2DNavigationControlledposDynamics(AbstractRandom2DNavigationDynamics
         return np.array(self.box_pos)
     
     def get_search_bounds_mean(self, index):
-        return 0.02
+        return (-0.02, 0.02)
     
     def get_task_lower_bound(self, index):
         return -0.02
     
     def get_task_upper_bound(self, index):
         return 0.02
+    
+class Random2DNavigationControlledposCircularWindDynamics(Random2DNavigationControlledposDynamics):
+    def calc_wind(self):
+        CENTER = np.array([0., .5], dtype=np.float32)
+        radius = self.box_pos - CENTER
+        return np.array([-radius[1], radius[0]], dtype=np.float32)*self.wind/0.5
+
+    def step(self, action, bounding_box: Box):
+        input_delta = action * self.max_action # here we don't normalize the action
+        total_delta = input_delta + self.calc_wind()
+
+        has_hit_wall = bounding_box.does_line_hit(
+            self.box_pos,
+            self.box_pos + total_delta,
+        )
+
+        self.box_pos = self.box_pos + total_delta
+
+        reward = self._get_reward(self.box_pos) - (0.0 / 100 if has_hit_wall else 0.0)
+        done = has_hit_wall
+        info = {"distance_from_goal": self.get_distance(self.box_pos, self.goal)}
+
+        return self._get_state(), reward, done, info
