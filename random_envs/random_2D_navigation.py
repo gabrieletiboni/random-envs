@@ -9,7 +9,9 @@ from random_envs.random_env import RandomEnv
 from .random_2D_nav_utils.geometry import Random2DNavigationBox
 from .random_2D_nav_utils.rendering import Random2DNavRenderer
 from .random_2D_nav_utils.dynamics import Random2DNavigationDynamics
-
+from .random_2D_nav_utils.dynamics import Random2DNavigationWithRandomvelDynamics
+from .random_2D_nav_utils.dynamics import Random2DNavigationOnlyposDynamics
+from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposDynamics
 
 
 class Random2DNavigation(RandomEnv):
@@ -43,6 +45,9 @@ class Random2DNavigation(RandomEnv):
     
     def _build_dynamics(self):
         return Random2DNavigationDynamics()
+    
+    def get_actor_state_mask(self):
+        return self.dynamics.get_actor_state_mask()
 
     def reset(self):
         # Sample new dynamics
@@ -89,6 +94,21 @@ class Random2DNavigation(RandomEnv):
 
     def set_verbosity(self, verbose):
         self.verbose = verbose
+    
+
+class Random2DNavigationWithRandomvel(Random2DNavigation):
+    def _build_dynamics(self):
+        return Random2DNavigationWithRandomvel()
+
+class Random2DNavigationOnlypos(Random2DNavigation):
+    def _build_dynamics(self):
+        return Random2DNavigationOnlyposDynamics()
+    
+class Random2DNavigationControlledpos(Random2DNavigation):
+    def _build_dynamics(self):
+        return Random2DNavigationControlledposDynamics()
+
+
 
 gym.envs.register(
     id="Random2DNavigation-v0",
@@ -98,44 +118,22 @@ gym.envs.register(
 )
 
 gym.envs.register(
-    id="Random2DNavigation_r25-v0",
-    entry_point="%s:Random2DNavigation" % __name__,
-    max_episode_steps=100,
-    kwargs={
-        "init_pos_distr_fraction_h": 0.25,
-        "init_pos_distr_fraction_v": 0.25,
-    }
-)
-gym.envs.register(
-    id="Random2DNavigation_r50-v0",
-    entry_point="%s:Random2DNavigation" % __name__,
-    max_episode_steps=100,
-    kwargs={
-        "init_pos_distr_fraction_h": 0.50,
-        "init_pos_distr_fraction_v": 0.50,
-    }
-)
-gym.envs.register(
-    id="Random2DNavigation_r75-v0",
-    entry_point="%s:Random2DNavigation" % __name__,
-    max_episode_steps=100,
-    kwargs={
-        "init_pos_distr_fraction_h": 0.75,
-        "init_pos_distr_fraction_v": 0.75,
-    }
-)
-gym.envs.register(
-    id="Random2DNavigation_r100-v0",
-    entry_point="%s:Random2DNavigation" % __name__,
-    max_episode_steps=100,
-    kwargs={
-        "init_pos_distr_fraction_h": 1.,
-        "init_pos_distr_fraction_v": 1.,
-    }
-)
-gym.envs.register(
     id="Random2DNavigationWithRandomVel-v0",
-    entry_point="%s:Random2DNavigation" % __name__,
+    entry_point="%s:Random2DNavigationWithRandomvel" % __name__,
     max_episode_steps=100,
-    kwargs={"isd_random_vel": True},
+    kwargs={},
+)
+
+gym.envs.register(
+    id="Random2DNavigationOnlypos-v0",
+    entry_point="%s:Random2DNavigationOnlypos" % __name__,
+    max_episode_steps=100,
+    kwargs={},
+)
+
+gym.envs.register(
+    id="Random2DNavigationControlledpos-v0",
+    entry_point="%s:Random2DNavigationControlledpos" % __name__,
+    max_episode_steps=100,
+    kwargs={},
 )
