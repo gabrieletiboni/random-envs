@@ -269,11 +269,11 @@ class Random2DNavigationControlledposDynamics(AbstractRandom2DNavigationDynamics
     
 class Random2DNavigationControlledposCircularWindDynamics(Random2DNavigationControlledposDynamics):
     def calc_wind(self):
-        if self.box_pos[1] > 1.:
+        if self.box_pos[1] > 0.9:
             return np.zeros(2)
         CENTER = np.array([0., .5], dtype=np.float32)
         radius = self.box_pos - CENTER
-        wind = np.array([-radius[1], radius[0]], dtype=np.float32)*self.wind[0]*10.
+        wind = np.array([-radius[1], radius[0]], dtype=np.float32)*self.wind[0]*15.
         return wind
 
     def step(self, action, bounding_box: Box):
