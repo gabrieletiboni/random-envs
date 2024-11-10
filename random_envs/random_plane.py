@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from random_envs.random_env import RandomEnv
 
 class RandomPlane(RandomEnv):
-    def __init__(self, difficulty='hard'):
+    def __init__(self, difficulty='hard', isd_randomness=None):
         RandomEnv.__init__(self)
 
         # Define the observation space (box position)
@@ -22,14 +22,7 @@ class RandomPlane(RandomEnv):
         self.box_pos = np.array([0.0, 0.0], dtype=np.float32)
         self.box_vel = np.array([0.0, 0.0], dtype=np.float32)
 
-        if difficulty == 'hard':
-            self.init_box_pos_distr = [-0.45, 0.45]
-            self.init_box_vel_distr = [-0.1, 0.1]
-        elif difficulty == 'easy':
-            self.init_box_pos_distr = [-0.05, 0.05]
-            self.init_box_vel_distr = [-0.0, 0.0] 
-        else:
-            raise ValueError(f'Difficulty value is not supported: {difficulty}')
+        self.init_box_pos_distr, self.init_box_vel_distr = self._build_init_distr(difficulty, isd_randomness)
 
         self.gravity = 9.81
         self.timestep = 0.05
@@ -137,6 +130,28 @@ class RandomPlane(RandomEnv):
     @property
     def rot_robot_to_world(self):
         return np.array([[np.cos(self.theta), -np.sin(self.theta)], [np.sin(self.theta), np.cos(self.theta)]])
+    
+    def _build_init_distr(self, difficulty, isd_randomness):
+        def _build_init_distr_from_difficulty(difficulty):
+            if difficulty == 'hard':
+                init_box_pos_distr = [-0.45, 0.45]
+                init_box_vel_distr = [-0.1, 0.1]
+            elif difficulty == 'easy':
+                init_box_pos_distr = [-0.05, 0.05]
+                init_box_vel_distr = [-0.0, 0.0] 
+            else:
+                raise ValueError(f'Difficulty value is not supported: {difficulty}')
+            return init_box_pos_distr, init_box_vel_distr
+
+        def _build_init_distr_from_scalar_parameter(isd_randomness):
+            init_box_pos_distr = np.array([-0.5+1e-5, 0.5-1e-5])*isd_randomness
+            init_box_vel_distr = np.array([-0.5, 0.5])*isd_randomness
+            return init_box_pos_distr, init_box_vel_distr
+
+        if isd_randomness is not None:
+            return _build_init_distr_from_scalar_parameter(isd_randomness)
+        else:
+            return _build_init_distr_from_difficulty(difficulty)
     
     def render(self, mode='human'):
         """Render the scene"""
