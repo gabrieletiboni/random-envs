@@ -55,9 +55,6 @@ class AbstractRandom2DNavigationDynamics(ABC):
     def _build_max_action(self):
         pass
 
-    def _build_vertical_wind(self):
-        return False
-
     def _build_dyn_ind_to_name(self):
         return (
             {0: "horizontal_wind_force"}
