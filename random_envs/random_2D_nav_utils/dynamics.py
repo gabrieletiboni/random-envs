@@ -289,3 +289,13 @@ class Random2DNavigationControlledposCircularWindDynamics(Random2DNavigationCont
         info = {"distance_from_goal": self.get_distance(self.box_pos, self.goal)}
 
         return self._get_state(), reward, done, info
+
+class Random2DNavigationControlledposHighDR(Random2DNavigationControlledposDynamics):
+    def get_search_bounds_mean(self, index):
+        return (-0.1, 0.1)
+    
+    def get_task_lower_bound(self, index):
+        return -0.1
+    
+    def get_task_upper_bound(self, index):
+        return 0.1
