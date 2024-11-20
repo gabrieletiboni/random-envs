@@ -290,7 +290,7 @@ class Random2DNavigationControlledposCircularWindDynamics(Random2DNavigationCont
 
         return self._get_state(), reward, done, info
 
-class Random2DNavigationControlledposHighDR(Random2DNavigationControlledposDynamics):
+class Random2DNavigationControlledposHighDRDynamics(Random2DNavigationControlledposDynamics):
     def get_search_bounds_mean(self, index):
         return (-0.1, 0.1)
     

@@ -13,7 +13,7 @@ from .random_2D_nav_utils.dynamics import Random2DNavigationWithRandomvelDynamic
 from .random_2D_nav_utils.dynamics import Random2DNavigationOnlyposDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposCircularWindDynamics
-from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposHighDR
+from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposHighDRDynamics
 
 
 class Random2DNavigation(RandomEnv):
@@ -116,7 +116,7 @@ class Random2DNavigationControlledposCircularWind(Random2DNavigation):
 
 class Random2DNavigationControlledposHighDR(Random2DNavigation):
     def _build_dynamics(self):
-        return Random2DNavigationControlledposHighDR()
+        return Random2DNavigationControlledposHighDRDynamics()
 
 gym.envs.register(
     id="Random2DNavigation-v0",
