@@ -46,6 +46,7 @@ class RandomHopperIsdEnv(MujocoEnv, utils.EzPickle):
         self.reward_threshold = 1750
 
         self.isd_randomness = isd_randomness
+        self.endless = True
         
 
     def get_search_bounds_mean(self, index):
@@ -113,10 +114,14 @@ class RandomHopperIsdEnv(MujocoEnv, utils.EzPickle):
         return obs
 
     def reset_model(self):
-        low = self.isd_randomness * -0.1
-        high = self.isd_randomness * 0.5
-        qpos = self.init_qpos + self.np_random.uniform(low=low, high=high, size=self.model.nq)
-        qvel = self.init_qvel + self.np_random.uniform(low=low, high=high, size=self.model.nv)
+        # low: 0. -.4 -... 
+        low = np.array([0.] + [-.4] + [-1.04] + [-1.04] + [-.53] + [-.53] + [0.] + [-.4] + [-1.] + [-1.]*3)*self.isd_randomness
+        # high: 0. 2. ...
+        high = np.array([0.] + [0.5] + [1.04] + [1.04] + [.53] + [.53] + [2.] + [5.] + [1.] + [1.]*3)*self.isd_randomness
+        qpos = self.init_qpos + self.np_random.uniform(low=low[:6], high=high[:6], size=self.model.nq)
+        qvel = self.init_qvel + self.np_random.uniform(low=low[6:], high=high[6:], size=self.model.nv)
+        # qpos = self.init_qpos + np.array(high[:6])
+        # qvel = self.init_qvel + np.array(high[6:])
         self.set_state(qpos, qvel)
 
         if self.dr_training:
