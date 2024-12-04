@@ -12,3 +12,4 @@ from . import random_ant
 from . import random_reacher
 from . import random_hopper_isd
 from . import random_half_cheetah_isd
+from . import random_walker2d_isd
