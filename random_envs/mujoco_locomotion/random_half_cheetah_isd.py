@@ -124,10 +124,10 @@ class RandomHalfCheetahIsd(MujocoEnv, utils.EzPickle):
         return obs
 
     def reset_model(self):
-        low = self.isd_randomness * -0.1
-        high = self.isd_randomness * 0.5
-        qpos = self.init_qpos + self.np_random.uniform(low=low, high=high, size=self.model.nq)
-        qvel = self.init_qvel + self.np_random.randn(self.model.nv) * self.isd_randomness * .5
+        low = [0.0] + [-.4] + [-1.57] + [-.53]*6 + [.0] + [-.4] + [-1.0] + [-1.0]*6
+        high = [0.0] + [0.5] + [1.57] + [.53]*6 + [2.0] + [5.0] + [1.0] + [1.0]*6
+        qpos = self.init_qpos + self.np_random.uniform(low=low[:9], high=high[:9])
+        qvel = self.init_qvel + self.np_random.uniform(low=low[9:], high=high[9:])
         self.set_state(qpos, qvel)
 
         if self.dr_training:
