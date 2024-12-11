@@ -6,7 +6,7 @@ from gym.utils import seeding
 import numpy as np
 
 from random_envs.random_env import RandomEnv
-from .random_2D_nav_utils.geometry import Random2DNavigationBox
+from .random_2D_nav_utils.geometry import Random2DNavigationBox, Random2DNavigationWOWallsBox
 from .random_2D_nav_utils.rendering import Random2DNavRenderer
 from .random_2D_nav_utils.dynamics import Random2DNavigationDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationWithRandomvelDynamics
@@ -14,6 +14,7 @@ from .random_2D_nav_utils.dynamics import Random2DNavigationOnlyposDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposCircularWindDynamics
 from .random_2D_nav_utils.dynamics import Random2DNavigationControlledposHighDRDynamics
+from .random_2D_nav_utils.dynamics import Random2DNavigationWOWallsDynamics
 
 
 class Random2DNavigation(RandomEnv):
@@ -30,7 +31,7 @@ class Random2DNavigation(RandomEnv):
         self.viewer = None
         self.preferred_lr = None
         self.reward_threshold = 0  # TODO
-        self.bounding_box = Random2DNavigationBox()
+        self.bounding_box = self._build_geometry()
         self.dynamics.set_isd_randomness(isd_randomness)
         self.dynamics.set_max_isd_area(self.bounding_box.get_area_before_wall())
         self.game_renderer = None
@@ -47,6 +48,9 @@ class Random2DNavigation(RandomEnv):
     
     def _build_dynamics(self):
         return Random2DNavigationDynamics()
+    
+    def _build_geometry(self):
+        return Random2DNavigationBox()
     
     def get_actor_state_mask(self):
         return self.dynamics.get_actor_state_mask()
@@ -118,6 +122,13 @@ class Random2DNavigationControlledposHighDR(Random2DNavigation):
     def _build_dynamics(self):
         return Random2DNavigationControlledposHighDRDynamics()
 
+class Random2DNavigationWOWalls(Random2DNavigation):
+    def _build_dynamics(self):
+        return Random2DNavigationWOWallsDynamics()
+    
+    def _build_geometry(self):
+        return Random2DNavigationWOWallsBox()
+
 gym.envs.register(
     id="Random2DNavigation-v0",
     entry_point="%s:Random2DNavigation" % __name__,
@@ -156,6 +167,13 @@ gym.envs.register(
 gym.envs.register(
     id="Random2DNavigationControlledposHighDR-v0",
     entry_point="%s:Random2DNavigationControlledposHighDR" % __name__,
+    max_episode_steps=100,
+    kwargs={},
+)
+
+gym.envs.register(
+    id="Random2DNavigationWOWalls-v0",
+    entry_point="%s:Random2DNavigationWOWalls" % __name__,
     max_episode_steps=100,
     kwargs={},
 )

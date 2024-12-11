@@ -299,3 +299,117 @@ class Random2DNavigationControlledposHighDRDynamics(Random2DNavigationControlled
     
     def get_task_upper_bound(self, index):
         return 0.1
+
+class Random2DNavigationWOWallsDynamics(AbstractRandom2DNavigationDynamics):
+    def _build_ob_space(self):
+        return spaces.Box(
+            low=np.array([-np.inf, -np.inf, -np.inf, -np.inf], dtype=np.float32),
+            high=np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32),
+            shape=(4,),
+            dtype=np.float32,
+        )
+    
+    def _build_action_space(self):
+        return spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+    
+    def _build_init_v_offset(self):
+        return 0.1
+    
+    def _build_goal(self):
+        return np.array([0.0, 1.1], dtype=np.float32)  # Position of goal
+    
+    def _build_wind(self):
+        return np.array(
+            [0.0, 0.0], dtype=np.float32
+        )  # Default action from wind (no action)
+    
+    def _build_max_action(self):
+        return 0.02
+
+    def _build_dyn_ind_to_name(self):
+        return {0: "horizontal_wind_displacement", 1: "vertical_wind_displacement"}
+    
+    def _build_init_box_pos_distr(self):
+        original = self.max_isd_area
+        hscale = self.isd_randomness
+        vscale = self.isd_randomness
+        scaled = np.array(original)
+        # scale horizontally
+        #scaled[:2] = (original[:2] - np.mean(original[:2]))*hscale + np.mean(original[:2])
+        scaled[:2] = original[:2]*hscale
+        # scale vertically
+        scaled[2] = self.init_v_offset*(1 - self.isd_randomness)
+        scaled[3] = (original[3] - self.init_v_offset)*vscale + self.init_v_offset
+        return scaled
+    
+    def reset(self):
+        # Reset box position and velocity
+        if self.init_box_pos_distr is None:
+            self.init_box_pos_distr = self._build_init_box_pos_distr()
+        if self.init_box_vel_distr is None:
+            self.init_box_vel_distr = self._build_init_box_vel_distr()
+        
+        self.box_pos = np.array(np.random.uniform(low=self.init_box_pos_distr[::2], high=self.init_box_pos_distr[1::2], size=(2,)),
+                                dtype=np.float32)
+        self.box_vel = np.array(np.random.uniform(low=self.init_box_vel_distr[::2], high=self.init_box_vel_distr[1::2], size=(2,)),
+                                dtype=np.float32)
+
+        self.goal = np.array(np.random.uniform(low=self.max_isd_area[::2], high=self.max_isd_area[1::2], size=(2,)),
+                             dtype=np.float32)
+        
+        # Reset distance from goal
+        self.distance_from_goal = self.get_distance(self.box_pos, self.goal)
+
+        return self._get_state()
+    
+    def step(self, action, bounding_box: Box):
+        input_delta = action * self.max_action
+        total_delta = input_delta + self.wind
+
+        has_hit_wall = bounding_box.does_line_hit(
+            self.box_pos,
+            self.box_pos + total_delta,
+        )
+
+        # rather than dying, do nothing if has hit wall
+        if not has_hit_wall:
+            self.box_pos = self.box_pos + total_delta
+
+        reward = self._get_reward(self.box_pos) 
+        done = False
+        info = {"distance_from_goal": self.get_distance(self.box_pos, self.goal)}
+
+        return self._get_state(), reward, done, info
+
+    def set_task(self, *task):
+        for i in self.dyn_ind_to_name.keys():
+            self.wind[i] = task[i]
+
+    def get_task(self):
+        return np.array(self.wind[:2])
+
+    def _get_state(self):
+        return np.array(np.concatenate((self.box_pos, self.goal)))
+
+    def _get_reward(self, x):
+        d = self.get_squared_distance(x, self.goal)
+        return (- d - np.log(d+1e-3) + 0.8) / 100
+
+    def get_distance(self, position, goal):
+        return np.sqrt(np.sum((position - goal) ** 2))
+
+    def get_squared_distance(self, position, goal):
+        return np.sum((position - goal) ** 2)
+    
+    def get_actor_state_mask(self):
+        return []
+
+    def get_search_bounds_mean(self, index):
+        # notice that vertical and horizontal winds have the same bounds
+        return (-0.04, 0.04)
+    
+    def get_task_lower_bound(self, index):
+        return -0.04
+    
+    def get_task_upper_bound(self, index):
+        return 0.04

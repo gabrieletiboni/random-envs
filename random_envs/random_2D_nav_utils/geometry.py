@@ -166,3 +166,31 @@ class Random2DNavigationBox(Box):
         # scale vertically
         scaled[3] = (original[3] - vbottom)*vscale + vbottom
         return scaled
+
+class Random2DNavigationWOWallsBox(Box):  
+    def __init__(self, hit_wall_epsilon=0.01):
+        super().__init__()
+
+        self.hit_wall_epsilon = hit_wall_epsilon
+
+        rectangle = Rectangle.from_line_with_epsilon(
+            -0.5, 0.5, 0.0, self.hit_wall_epsilon, variable="x"
+        )
+        self.add_rectangle(rectangle)
+        rectangle = Rectangle.from_line_with_epsilon(
+            -0.5, 0.5, 1.2, self.hit_wall_epsilon, variable="x"
+        )
+        self.add_rectangle(rectangle)
+        rectangle = Rectangle.from_line_with_epsilon(
+            0.0, 1.2, -0.5, self.hit_wall_epsilon, variable="y"
+        )
+        self.add_rectangle(rectangle)
+        rectangle = Rectangle.from_line_with_epsilon(
+            0.0, 1.2, 0.5, self.hit_wall_epsilon, variable="y"
+        )
+        self.add_rectangle(rectangle)
+    
+    def get_area_before_wall(self):
+        h = 0.5 - self.hit_wall_epsilon
+        v = 1.2 - self.hit_wall_epsilon
+        return np.array([-h, h, self.hit_wall_epsilon, v])
